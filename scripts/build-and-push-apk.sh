@@ -79,7 +79,14 @@ check_git
 
 # Step 1: Gerar APK
 log_info "Passo 1: Gerando APK..."
-bash /root/build-apk-on-vps.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+if [ -x "$SCRIPT_DIR/build-apk-on-vps.sh" ]; then
+  bash "$SCRIPT_DIR/build-apk-on-vps.sh"
+elif [ -x "/root/build-apk-on-vps.sh" ]; then
+  bash /root/build-apk-on-vps.sh
+else
+  log_error "build-apk-on-vps.sh não encontrado em $SCRIPT_DIR nem em /root"
+fi
 
 APK_FILE="/root/wireguard-vpn-manager.apk"
 if [ ! -f "$APK_FILE" ]; then
