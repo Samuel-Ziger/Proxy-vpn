@@ -1,0 +1,16 @@
+node_modules/
+dist/
+android/
+.DS_Store
+*.log
+.env
+.env.local
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.gradle/
+*.apk
+*.aab
+build/
