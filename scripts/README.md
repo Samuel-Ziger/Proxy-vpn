@@ -1,6 +1,6 @@
 # 🚀 Scripts Automatizados - VPS + APK
 
-Dois scripts all-in-one para deixar a VPS pronta e gerar o APK automaticamente.
+Três scripts all-in-one para deixar a VPS pronta, gerar o APK e fazer push automático para GitHub.
 
 ## 📋 Resumo rápido
 
@@ -8,6 +8,7 @@ Dois scripts all-in-one para deixar a VPS pronta e gerar o APK automaticamente.
 |--------|-----------|-----------|
 | `install-vps-complete.sh` | Instala WireGuard + configurações | **VPS** |
 | `build-apk-on-vps.sh` | Gera APK Android | **VPS** |
+| `build-and-push-apk.sh` | Gera APK + push GitHub + cria Release | **VPS** |
 
 ---
 
@@ -152,6 +153,88 @@ ssh root@162.243.54.185 'cat /root/wireguard-vpn-manager.apk' > wireguard.apk
 - Execute o app
 - Preencha dados (IP, porta, chaves)
 - Clique **Conectar** ✓
+
+---
+
+---
+
+## 📦 Script 3: Build APK + Push GitHub (Automático)
+
+**Arquivo:** `scripts/build-and-push-apk.sh`
+
+### O que faz:
+
+✅ Gera APK (automático)  
+✅ Faz commit no GitHub  
+✅ Cria Release automática  
+✅ Gera link de download  
+✅ Cria QR code para celular  
+
+### Pré-requisitos:
+
+```bash
+# Instalar GitHub CLI
+sudo apt install gh -y
+
+# Fazer login (uma vez)
+gh auth login
+# Escolha: GitHub.com → HTTPS → Paste token
+```
+
+### Como usar (uma linha):
+
+```bash
+# Na VPS
+sudo bash /root/build-and-push-apk.sh
+
+# Ou via SSH
+ssh root@162.243.54.185 "sudo bash /root/build-and-push-apk.sh"
+```
+
+### O que você recebe:
+
+```
+GitHub Release:     https://github.com/Samuel-Ziger/Proxy-vpn/releases/tag/v2024.06.14
+Download URL:       https://github.com/Samuel-Ziger/Proxy-vpn/releases/download/v2024.06.14/wireguard-vpn-manager.apk
+QR Code:            [gerado automaticamente]
+```
+
+**Saída esperada:**
+```
+╔════════════════════════════════════════════════════════════╗
+║      ✅ APK GERADO E ENVIADO PARA GITHUB COM SUCESSO!     ║
+╚════════════════════════════════════════════════════════════╝
+
+📱 Release criado:
+Release URL: https://github.com/Samuel-Ziger/Proxy-vpn/releases/tag/v2024.06.14
+Download: https://github.com/.../wireguard-vpn-manager.apk
+
+📥 Download no celular:
+1. Abra no navegador e clique Download
+2. Ou escaneie QR code
+3. Ou acesse releases page
+
+Tamanho: 75 MB
+Commit: abc1234
+```
+
+### 📱 Baixar no celular:
+
+**Opção 1 - Direto do GitHub (Recomendado):**
+1. Celular: navegador
+2. Acesse: `https://github.com/Samuel-Ziger/Proxy-vpn/releases`
+3. Clique no APK mais recente
+4. Clique **Download**
+
+**Opção 2 - Via QR Code:**
+- O script gera um QR automaticamente
+- Escaneie com câmera do celular
+- Clique para baixar
+
+**Opção 3 - Link direto:**
+```
+https://github.com/Samuel-Ziger/Proxy-vpn/releases/download/v2024.06.14/wireguard-vpn-manager.apk
+```
 
 ---
 
