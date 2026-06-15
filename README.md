@@ -10,16 +10,16 @@ VPN pessoal com **WireGuard** na VPS e app Android nativo para conectar com **um
 
 | Componente | Descrição |
 |------------|-----------|
-| **Servidor (VPS)** | WireGuard + UFW + Fail2Ban + hardening SSH |
+| **Servidor (VPS)** | WireGuard + UFW + Fail2Ban + hardening SSH + NAT |
 | **App Android** | Cliente VPN nativo (`GoBackend` + `VpnService`) |
-| **Scripts** | Instalação automatizada da VPS e build do APK |
+| **Scripts** | Instalação da VPS, DNS filtrado e build do APK |
 
 ```
 Celular (GhostTunnel)
-        │  UDP 51820
+        │  UDP 51820 (criptografado)
         ▼
    VPS Ubuntu/Debian
-        │  NAT
+        │  NAT + DNS AdGuard
         ▼
       Internet
 ```
@@ -28,27 +28,29 @@ Celular (GhostTunnel)
 
 ## Funcionalidades
 
-- Conexão VPN em **um toque** no Android
-- Cliente WireGuard **embutido**
-- Scripts de setup para VPS (Ubuntu/Debian)
-- UFW + Fail2ban + hardening SSH
-- `fix-vpn-nat.sh` para corrigir “sem internet”
-- Chaves ficam **apenas no dispositivo**
-- **DNS AdGuard** bloqueia ads, trackers, malware e phishing (quando conectado)
+### Servidor
+- Setup automatizado (WireGuard, UFW, Fail2ban, SSH)
+- `fix-vpn-nat.sh` corrige “sem internet” após conectar
+- `enable-dns-filter.sh` ativa DNS AdGuard no cliente WireGuard
 
----
+### App Android
+- Conexão VPN em **um toque** (Conectar / Desconectar)
+- Cliente WireGuard **embutido** — sem app externo
+- Tema dark Ghost, ícone e splash personalizados
+- Card **Proteção GhostTunnel** (túnel, DNS, IP da VPS)
+- Painel conectado: IP público, servidor, timer de sessão, DNS ativo
+- Chaves salvas **apenas no dispositivo** (`localStorage`)
 
-## Segurança em redes públicas
-
-Com a VPN ativa:
-
+### Proteção em rede
 - Tráfego **criptografado** até a VPS (Wi‑Fi público/corporativo)
-- **DNS filtrado** — bloqueia domínios maliciosos, anúncios e rastreadores conhecidos
-- **IP oculto** — sites veem o IP da sua VPS
+- **DNS AdGuard** — bloqueia ads, trackers, malware e phishing (domínios conhecidos)
+- **IP de saída** = IP da sua VPS (`AllowedIPs = 0.0.0.0/0`)
 
-Limitação: **cookies** não são bloqueados pela VPN (use navegador com proteção extra).
+Limitação: **cookies** não são bloqueados pela VPN — use navegador com proteção extra.
 
 Detalhes: [docs/SECURITY.md](docs/SECURITY.md)
+
+---
 
 ## Início rápido
 
@@ -60,7 +62,13 @@ cd /opt/GhostTunnel/scripts
 sudo bash install-vps-complete.sh
 ```
 
-Chaves para o app:
+Ativar DNS filtrado no perfil do cliente:
+
+```bash
+sudo bash enable-dns-filter.sh
+```
+
+Dados para configurar o app:
 
 ```bash
 curl -4 ifconfig.me
@@ -76,20 +84,52 @@ sudo bash fix-vpn-nat.sh
 
 ### 2. APK no celular
 
-Build na VPS:
+APK gerado localmente: **`releases/ghost-tunnel.apk`** (não versionado no Git).
+
+**Build na VPS:**
 
 ```bash
+cd /opt/GhostTunnel/scripts
 sudo bash build-apk-on-vps.sh
 scp usuario@IP_VPS:/root/ghost-tunnel.apk .
 ```
 
-Build no PC: veja [mobile/README.md](mobile/README.md).
+**Build no Windows** (Node 18+, Android Studio / SDK):
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+cd mobile
+npm install
+npm run build
+npx cap sync android
+cd android
+.\gradlew.bat assembleDebug
+```
+
+Copie o APK para `releases/`:
+
+```powershell
+Copy-Item mobile\android\app\build\outputs\apk\debug\app-debug.apk releases\ghost-tunnel.apk
+```
+
+**Linux/macOS:** `cd mobile && ./build.sh` — copia automaticamente para `releases/ghost-tunnel.apk`.
+
+Mais detalhes: [mobile/README.md](mobile/README.md)
 
 ### 3. Conectar
 
-1. Configuração da VPS → IP, porta `51820`, chaves
-2. Salvar → **Conectar VPN**
-3. Teste: https://ifconfig.me
+1. Instale `ghost-tunnel.apk` no Android
+2. **Configuração da VPS** → IP, porta `51820`, chaves do `wg-client.conf`
+3. **Salvar** → **Conectar VPN** (aceite a permissão na primeira vez)
+4. Teste: https://ifconfig.me deve mostrar o IP da VPS
+
+### 4. Recomendado no Android
+
+Em **Configurações → VPN → GhostTunnel**:
+
+- **VPN sempre ativa**
+- **Bloquear conexões sem VPN** (kill switch do sistema)
 
 ---
 
@@ -97,10 +137,11 @@ Build no PC: veja [mobile/README.md](mobile/README.md).
 
 ```
 GhostTunnel/
-├── mobile/          # App Android + plugin WireGuard nativo
-├── scripts/         # Automação VPS e build APK
-├── docs/            # Guia da VPS
-└── releases/        # APKs (não versionados no Git)
+├── mobile/                    # App Capacitor + plugin WireGuard nativo
+│   └── plugins/capacitor-wireguard/
+├── scripts/                   # Automação VPS e build APK
+├── docs/                      # Setup da VPS e modelo de segurança
+└── releases/                  # ghost-tunnel.apk (local, ignorado no Git)
 ```
 
 Documentação:
@@ -115,10 +156,11 @@ Documentação:
 ## Segurança
 
 - SSH só com chave; root e senha desabilitados
-- UFW deny incoming; só SSH + WireGuard
+- UFW deny incoming; só SSH (22) + WireGuard (51820)
 - Apague `/root/wg-client.conf` após configurar o celular
-- Nunca commite chaves ou `.conf` com secrets
-- Snapshot na DigitalOcean antes de mudanças
+- Nunca commite chaves, `.conf` com secrets ou `*.apk`
+- Rotacione chaves WireGuard se suspeitar de vazamento
+- Snapshot na DigitalOcean antes de mudanças na VPS
 
 ---
 
@@ -126,16 +168,18 @@ Documentação:
 
 | Problema | Solução |
 |----------|---------|
-| Sem internet | `sudo bash scripts/fix-vpn-nat.sh` |
-| Sem handshake | Libere UDP 51820 na DigitalOcean |
+| Sem internet na VPN | `sudo bash scripts/fix-vpn-nat.sh` |
+| DNS não filtra | `sudo bash scripts/enable-dns-filter.sh` e reconecte |
+| Sem handshake | Libere UDP 51820 no UFW e no firewall da cloud |
 | WireGuard parado | `sudo systemctl restart wg-quick@wg0` |
-| Status | `sudo wg show` |
+| Status do túnel | `sudo wg show` |
+| Rede corporativa bloqueia VPN | UDP 51820 pode estar bloqueado — ver [SECURITY.md](docs/SECURITY.md) |
 
 ---
 
 ## Stack
 
-WireGuard · Capacitor · `com.wireguard.android:tunnel` · UFW · Fail2ban
+WireGuard · Capacitor 6 · `com.wireguard.android:tunnel` · AdGuard DNS · UFW · Fail2ban
 
 ---
 
