@@ -2,6 +2,7 @@ package com.proxyvpn.wireguard;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.getcapacitor.JSObject;
@@ -16,6 +17,7 @@ import com.wireguard.config.Config;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 @CapacitorPlugin(name = "WireGuard")
@@ -76,17 +78,19 @@ public class WireGuardPlugin extends Plugin {
 
     @PluginMethod
     public void disconnect(PluginCall call) {
-        Backend currentBackend = backend;
-        SimpleTunnel currentTunnel = tunnel;
-
-        if (currentBackend == null || currentTunnel == null) {
-            resolveStatus(call, false);
-            return;
-        }
-
         executor.execute(() -> {
             try {
-                currentBackend.setState(currentTunnel, Tunnel.State.DOWN, null);
+                ensureBackend();
+                String tunnelName = resolveActiveTunnelName();
+                ensureTunnel(tunnelName);
+
+                if (tunnel == null) {
+                    resolveStatus(call, false);
+                    return;
+                }
+
+                backend.setState(tunnel, Tunnel.State.DOWN, null);
+                tunnel = null;
                 resolveStatus(call, false);
             } catch (Exception e) {
                 Log.e(TAG, "disconnect failed", e);
@@ -97,23 +101,82 @@ public class WireGuardPlugin extends Plugin {
 
     @PluginMethod
     public void getStatus(PluginCall call) {
-        Backend currentBackend = backend;
-        SimpleTunnel currentTunnel = tunnel;
-
-        if (currentBackend == null || currentTunnel == null) {
-            resolveStatus(call, false);
-            return;
-        }
-
         executor.execute(() -> {
             try {
-                Tunnel.State state = currentBackend.getState(currentTunnel);
+                ensureBackend();
+                String tunnelName = resolveActiveTunnelName();
+                ensureTunnel(tunnelName);
+
+                if (tunnel == null) {
+                    resolveStatus(call, false);
+                    return;
+                }
+
+                Tunnel.State state = backend.getState(tunnel);
                 resolveStatus(call, state == Tunnel.State.UP);
             } catch (Exception e) {
                 Log.e(TAG, "getStatus failed", e);
                 resolveStatus(call, false);
             }
         });
+    }
+
+    @PluginMethod
+    public void saveConfig(PluginCall call) {
+        String json = call.getString("json");
+        if (json == null || json.trim().isEmpty()) {
+            call.reject("Configuração vazia");
+            return;
+        }
+
+        try {
+            SecureConfigStore.save(getContext().getApplicationContext(), json);
+            call.resolve();
+        } catch (Exception e) {
+            Log.e(TAG, "saveConfig failed", e);
+            call.reject("Falha ao salvar configuração: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void loadConfig(PluginCall call) {
+        try {
+            String json = SecureConfigStore.load(getContext().getApplicationContext());
+            JSObject result = new JSObject();
+            result.put("json", json != null ? json : "");
+            call.resolve(result);
+        } catch (Exception e) {
+            Log.e(TAG, "loadConfig failed", e);
+            call.reject("Falha ao carregar configuração: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void clearConfig(PluginCall call) {
+        try {
+            SecureConfigStore.clear(getContext().getApplicationContext());
+            call.resolve();
+        } catch (Exception e) {
+            Log.e(TAG, "clearConfig failed", e);
+            call.reject("Falha ao limpar configuração: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void openVpnSettings(PluginCall call) {
+        Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("Activity indisponível");
+            return;
+        }
+
+        try {
+            Intent intent = new Intent(Settings.ACTION_VPN_SETTINGS);
+            activity.startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Não foi possível abrir configurações VPN: " + e.getMessage());
+        }
     }
 
     @Override
@@ -147,11 +210,9 @@ public class WireGuardPlugin extends Plugin {
     private void startTunnel(PluginCall call, String configText, String tunnelName) {
         executor.execute(() -> {
             try {
-                if (!(backend instanceof GoBackend)) {
-                    backend = new GoBackend(getContext().getApplicationContext());
-                }
+                ensureBackend();
+                ensureTunnel(tunnelName);
 
-                tunnel = new SimpleTunnel(tunnelName);
                 Config config = Config.parse(new ByteArrayInputStream(configText.getBytes(StandardCharsets.UTF_8)));
 
                 Tunnel.State newState = backend.setState(tunnel, Tunnel.State.UP, config);
@@ -169,6 +230,44 @@ public class WireGuardPlugin extends Plugin {
                 call.reject("Falha ao conectar: " + e.getMessage());
             }
         });
+    }
+
+    private void ensureBackend() {
+        if (!(backend instanceof GoBackend)) {
+            backend = new GoBackend(getContext().getApplicationContext());
+        }
+    }
+
+    private void ensureTunnel(String tunnelName) {
+        if (tunnelName == null || tunnelName.isEmpty()) {
+            tunnel = null;
+            return;
+        }
+
+        if (tunnel == null || !tunnel.getName().equals(tunnelName)) {
+            tunnel = new SimpleTunnel(tunnelName);
+        }
+    }
+
+    private String resolveActiveTunnelName() {
+        if (tunnel != null) {
+            return tunnel.getName();
+        }
+
+        try {
+            ensureBackend();
+            Set<String> running = backend.getRunningTunnelNames();
+            if (running.contains(DEFAULT_TUNNEL_NAME)) {
+                return DEFAULT_TUNNEL_NAME;
+            }
+            if (!running.isEmpty()) {
+                return running.iterator().next();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "resolveActiveTunnelName failed", e);
+        }
+
+        return DEFAULT_TUNNEL_NAME;
     }
 
     private void resolveStatus(PluginCall call, boolean connected) {

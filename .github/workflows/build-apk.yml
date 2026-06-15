@@ -1,0 +1,57 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        working-directory: mobile
+        run: |
+          npm ci
+          npm run build --prefix plugins/capacitor-wireguard
+
+      - name: Build web + sync
+        working-directory: mobile
+        run: |
+          npm run build
+          npx cap sync android
+
+      - name: Assemble debug APK
+        working-directory: mobile/android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - name: Package artifact
+        run: |
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk releases/ghost-tunnel.apk
+          sha256sum releases/ghost-tunnel.apk > releases/ghost-tunnel.apk.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ghost-tunnel-apk
+          path: |
+            releases/ghost-tunnel.apk
+            releases/ghost-tunnel.apk.sha256

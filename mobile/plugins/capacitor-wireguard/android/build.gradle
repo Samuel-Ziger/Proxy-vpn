@@ -51,6 +51,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':capacitor-android')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.security:security-crypto:1.1.0-alpha06"
     implementation "com.wireguard.android:tunnel:$wireguardTunnelVersion"
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     testImplementation "junit:junit:$junitVersion"

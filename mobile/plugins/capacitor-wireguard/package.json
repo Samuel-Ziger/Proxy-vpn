@@ -10,6 +10,12 @@
     "android/build.gradle",
     "dist/"
   ],
+  "scripts": {
+    "build": "npm run build:esm && npm run build:cjs && npm run build:types",
+    "build:esm": "esbuild src/index.ts --bundle --format=esm --outfile=dist/esm/index.js --external:@capacitor/core",
+    "build:cjs": "esbuild src/index.ts --bundle --format=cjs --outfile=dist/plugin.cjs.js --external:@capacitor/core",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist/esm"
+  },
   "capacitor": {
     "android": {
       "src": "android"
@@ -17,5 +23,9 @@
   },
   "peerDependencies": {
     "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5",
+    "typescript": "^5.4.5"
   }
 }

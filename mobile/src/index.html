@@ -29,38 +29,53 @@
     </header>
 
     <main class="main">
+      <section id="wizardCard" class="wizard-card hidden">
+        <h2>Bem-vindo ao GhostTunnel</h2>
+        <p>Importe o <code>wg-client.conf</code> da VPS ou preencha os campos manualmente.</p>
+        <ol class="wizard-steps">
+          <li>Na VPS: <code>sudo cat /root/wg-client.conf</code></li>
+          <li>Cole abaixo ou preencha IP e chaves</li>
+          <li>Salve e toque em <strong>Conectar VPN</strong></li>
+        </ol>
+        <button id="wizardDismiss" class="btn btn-secondary" type="button">Entendi</button>
+      </section>
+
       <section class="hero-card">
         <div class="status-row">
-          <span id="statusDot" class="status-dot disconnected"></span>
+          <span id="statusDot" class="status-dot disconnected" aria-label="Desconectado"></span>
           <span id="statusText" class="status-label">Desconectado</span>
         </div>
 
-        <button id="toggleBtn" class="btn-connect btn-success" type="button">
+        <button id="toggleBtn" class="btn-connect btn-success" type="button" aria-pressed="false">
           Conectar VPN
         </button>
 
-        <div id="statusMessage" class="status-message"></div>
+        <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+
+        <button id="vpnSettingsBtn" class="btn btn-secondary btn-inline" type="button">
+          VPN sempre ativa (configurações Android)
+        </button>
       </section>
 
       <section class="security-card">
         <h2 class="security-title">Proteção GhostTunnel</h2>
         <ul class="security-list">
-          <li><span class="sec-icon">🔐</span> Túnel criptografado em redes públicas/corporativas</li>
-          <li><span class="sec-icon">🛡</span> DNS filtra malware, phishing e ads</li>
-          <li><span class="sec-icon">👁</span> Bloqueia rastreadores conhecidos (domínios)</li>
-          <li><span class="sec-icon">🌐</span> IP de saída = sua VPS</li>
+          <li><span class="sec-icon" aria-hidden="true">🔐</span> Túnel criptografado em redes públicas/corporativas</li>
+          <li><span class="sec-icon" aria-hidden="true">🛡</span> DNS filtra malware, phishing e ads</li>
+          <li><span class="sec-icon" aria-hidden="true">👁</span> Bloqueia rastreadores conhecidos (domínios)</li>
+          <li><span class="sec-icon" aria-hidden="true">🌐</span> IP de saída verificado após conectar</li>
         </ul>
         <p class="security-note">Cookies em sites exigem bloqueador no navegador — a VPN não os remove.</p>
       </section>
 
       <section id="connectedPanel" class="connected-panel hidden">
         <div class="protected-badge">
-          <span class="shield-icon">🛡</span>
+          <span class="shield-icon" aria-hidden="true">🛡</span>
           Protegido
         </div>
         <div class="info-grid">
           <div class="info-item">
-            <span class="info-label">IP público</span>
+            <span class="info-label">IP de saída</span>
             <span id="displayIp" class="info-value">—</span>
           </div>
           <div class="info-item">
@@ -80,14 +95,31 @@
 
       <section class="config-section">
         <button id="settingsToggle" class="btn btn-secondary settings-toggle" type="button">
-          <span class="settings-icon">⚙</span>
+          <span class="settings-icon" aria-hidden="true">⚙</span>
           Configuração da VPS
         </button>
 
         <div id="settingsPanel" class="settings-panel hidden">
-          <form id="configForm">
+          <form id="configForm" onsubmit="return false">
+            <div class="import-block">
+              <label for="confImport">Importar wg-client.conf</label>
+              <textarea
+                id="confImport"
+                placeholder="Cole aqui o conteúdo de /root/wg-client.conf"
+                rows="5"
+                spellcheck="false"
+              ></textarea>
+              <div class="import-actions">
+                <button type="button" id="importBtn" class="btn btn-secondary">Importar texto</button>
+                <label class="btn btn-secondary file-btn">
+                  Escolher arquivo
+                  <input type="file" id="confFile" accept=".conf,text/plain" hidden>
+                </label>
+              </div>
+            </div>
+
             <div class="form-group">
-              <label for="serverIp">IP da VPS (IPv4)</label>
+              <label for="serverIp">IP ou hostname da VPS</label>
               <input
                 type="text"
                 id="serverIp"
@@ -108,23 +140,31 @@
 
             <div class="form-group">
               <label for="privateKey">Chave privada do cliente</label>
-              <textarea
-                id="privateKey"
-                placeholder="PrivateKey do wg-client.conf"
-                rows="3"
-                spellcheck="false"
-              ></textarea>
+              <div class="key-row">
+                <textarea
+                  id="privateKey"
+                  class="key-input masked"
+                  placeholder="PrivateKey do wg-client.conf"
+                  rows="3"
+                  spellcheck="false"
+                ></textarea>
+                <button type="button" id="togglePrivateKey" class="btn btn-secondary btn-small" aria-pressed="false">
+                  Mostrar
+                </button>
+              </div>
             </div>
 
             <div class="form-group">
               <label for="publicKeyServer">Chave pública do servidor</label>
               <textarea
                 id="publicKeyServer"
-                placeholder="server_public.key"
+                placeholder="PublicKey do servidor"
                 rows="3"
                 spellcheck="false"
               ></textarea>
             </div>
+
+            <input type="hidden" id="clientAddress" value="10.0.0.2/32">
 
             <button type="button" id="saveBtn" class="btn btn-primary">
               Salvar configuração
@@ -135,7 +175,7 @@
     </main>
 
     <footer class="footer">
-      <p>GhostTunnel • Chaves só no dispositivo</p>
+      <p>GhostTunnel • Chaves criptografadas no dispositivo</p>
     </footer>
   </div>
 

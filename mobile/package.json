@@ -1,29 +1,24 @@
 {
   "name": "ghost-tunnel-mobile",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "GhostTunnel — Android VPN client",
-  "main": "index.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:plugin": "npm run build --prefix plugins/capacitor-wireguard",
+    "build": "npm run build:plugin && vite build",
     "preview": "vite preview",
-    "cap:add:android": "cap add android",
     "cap:sync": "cap sync",
-    "cap:build": "cap build android",
     "cap:open": "cap open android",
-    "cap:run": "cap run android",
-    "build:apk": "npm run build && npm run cap:sync && npm run cap:build"
+    "build:apk": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",
     "@capacitor/app": "^6.0.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/haptics": "^6.0.0",
-    "@capacitor/keyboard": "^6.0.0",
     "@capacitor/status-bar": "^6.0.0",
-    "capacitor-wireguard": "file:./plugins/capacitor-wireguard",
-    "qrcodejs": "^1.0.0"
+    "capacitor-wireguard": "file:./plugins/capacitor-wireguard"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.0.0",

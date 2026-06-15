@@ -47,7 +47,7 @@ Proteger você em **redes públicas** (café, aeroporto) e **corporativas** (Wi�
 
 Bloqueia: anúncios, rastreadores, phishing e malware (listas mantidas pelo AdGuard).
 
-Alternativa na VPS (opcional): `scripts/install-adguard-home.sh` — DNS próprio na interface `10.0.0.1`.
+Alternativa na VPS (opcional): instalar [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome) na interface `10.0.0.1` e apontar o DNS do cliente para esse IP.
 
 ---
 

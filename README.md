@@ -36,10 +36,12 @@ Celular (GhostTunnel)
 ### App Android
 - Conexão VPN em **um toque** (Conectar / Desconectar)
 - Cliente WireGuard **embutido** — sem app externo
-- Tema dark Ghost, ícone e splash personalizados
-- Card **Proteção GhostTunnel** (túnel, DNS, IP da VPS)
-- Painel conectado: IP público, servidor, timer de sessão, DNS ativo
-- Chaves salvas **apenas no dispositivo** (`localStorage`)
+- **Importar `wg-client.conf`** (arquivo ou colar texto)
+- Chaves em **EncryptedSharedPreferences** (Android Keystore)
+- Tema dark Ghost, wizard de primeiro uso
+- IP de **saída real** verificado após conectar
+- IPv4 + IPv6 no túnel (`::/0`)
+- Botão para abrir **VPN sempre ativa** nas configurações Android
 
 ### Proteção em rede
 - Tráfego **criptografado** até a VPS (Wi‑Fi público/corporativo)
@@ -120,9 +122,9 @@ Mais detalhes: [mobile/README.md](mobile/README.md)
 ### 3. Conectar
 
 1. Instale `ghost-tunnel.apk` no Android
-2. **Configuração da VPS** → IP, porta `51820`, chaves do `wg-client.conf`
+2. **Importe** `/root/wg-client.conf` ou preencha IP/chaves manualmente
 3. **Salvar** → **Conectar VPN** (aceite a permissão na primeira vez)
-4. Teste: https://ifconfig.me deve mostrar o IP da VPS
+4. Confira o **IP de saída** no painel — deve ser o da VPS
 
 ### 4. Recomendado no Android
 

@@ -104,7 +104,7 @@ DNS = ${DNS_SERVER}
 [Peer]
 PublicKey = ${SERVER_PUBLIC}
 Endpoint = ${PUBLIC_ENDPOINT}
-AllowedIPs = 0.0.0.0/0
+AllowedIPs = 0.0.0.0/0, ::/0
 PersistentKeepalive = 25
 EOF
 

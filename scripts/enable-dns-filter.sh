@@ -27,6 +27,9 @@ if [ -f "$CLIENT_CONF" ]; then
   else
     sed -i "/^\[Interface\]/a DNS = ${DNS_FILTER}" "$CLIENT_CONF"
   fi
+  if grep -q '^AllowedIPs = ' "$CLIENT_CONF" && ! grep -q '::/0' "$CLIENT_CONF"; then
+    sed -i 's/^AllowedIPs = .*/AllowedIPs = 0.0.0.0\/0, ::\/0/' "$CLIENT_CONF"
+  fi
   echo "✓ Atualizado: $CLIENT_CONF"
 else
   echo "⚠ $CLIENT_CONF não encontrado — configure DNS no app GhostTunnel"
