@@ -1,7 +1,7 @@
 {
   "name": "wireguard-vpn-mobile",
   "version": "1.0.0",
-  "description": "WireGuard VPN Manager Mobile App",
+  "description": "WireGuard VPN client for Android",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -13,8 +13,7 @@
     "cap:build": "cap build android",
     "cap:open": "cap open android",
     "cap:run": "cap run android",
-    "build:apk": "npm run build && npm run cap:sync && npm run cap:build -- --keystorePath=./android.keystore --keystoreAlias=wireguard --keystoreAliasPassword=wireguard --keystorePassword=wireguard",
-    "build:debug": "npm run build && npm run cap:sync && cap run android"
+    "build:apk": "npm run build && npm run cap:sync && npm run cap:build"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",
@@ -22,8 +21,8 @@
     "@capacitor/core": "^6.0.0",
     "@capacitor/haptics": "^6.0.0",
     "@capacitor/keyboard": "^6.0.0",
-    "@capacitor/platform": "^6.0.0",
     "@capacitor/status-bar": "^6.0.0",
+    "capacitor-wireguard": "file:./plugins/capacitor-wireguard",
     "qrcodejs": "^1.0.0"
   },
   "devDependencies": {

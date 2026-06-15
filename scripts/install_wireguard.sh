@@ -80,14 +80,12 @@ echo "Bringing up WireGuard interface..."
 wg-quick up wg0 || { echo "wg-quick up failed" >&2; exit 1; }
 systemctl enable wg-quick@wg0
 
-# Determine public endpoints from the server
-IPV4=$(curl -4 -s https://ifconfig.me || true)
-IPV6=$(curl -6 -s https://ifconfig.me || true)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "$SCRIPT_DIR/fix-vpn-nat.sh"
 
+# Determine public IPv4 endpoint
+IPV4=$(curl -4 -s https://ifconfig.me || true)
 PUBLIC_ENDPOINT="${IPV4}:${WG_PORT}"
-if [ -n "${IPV6}" ]; then
-  PUBLIC_ENDPOINT="[${IPV6}]:${WG_PORT}"
-fi
 
 echo "Writing client config to /root/wg-client.conf and generating QR..."
 cat > /root/wg-client.conf <<EOF
@@ -99,7 +97,7 @@ DNS = ${DNS_SERVER}
 [Peer]
 PublicKey = ${SERVER_PUBLIC}
 Endpoint = ${PUBLIC_ENDPOINT}
-AllowedIPs = 0.0.0.0/0, ::/0
+AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 EOF
 

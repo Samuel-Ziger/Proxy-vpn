@@ -176,6 +176,11 @@ wg-quick up wg0 || { log_error "Falha ao iniciar WireGuard"; exit 1; }
 systemctl enable wg-quick@wg0
 log_success "WireGuard iniciado"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+log_info "Configurando NAT/forward para VPN (UFW)..."
+bash "$SCRIPT_DIR/fix-vpn-nat.sh"
+log_success "NAT/forward VPN configurado"
+
 # Step 12: Obter IP público
 log_info "Passo 12: Detectando IP público..."
 IPV4=$(curl -4 -s https://ifconfig.me 2>/dev/null || echo "")
@@ -197,7 +202,7 @@ DNS = ${DNS_SERVER}
 [Peer]
 PublicKey = ${SERVER_PUBLIC}
 Endpoint = ${IPV4}:${WG_PORT}
-AllowedIPs = 0.0.0.0/0, ::/0
+AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 EOF
 

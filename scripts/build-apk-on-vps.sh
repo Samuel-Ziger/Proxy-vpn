@@ -21,7 +21,10 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Paths
-BUILD_DIR="/opt/wireguard-apk"
+BUILD_DIR="/opt/Proxy-vpn"
+if [ ! -d "$BUILD_DIR/mobile" ]; then
+  BUILD_DIR="/opt/wireguard-apk"
+fi
 REPO_URL="https://github.com/Samuel-Ziger/Proxy-vpn.git"
 APK_OUTPUT="${BUILD_DIR}/mobile/android/app/build/outputs/apk/debug"
 
@@ -59,7 +62,7 @@ check_root() {
 
 echo ""
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  📱 WireGuard APK Builder - VPS Automated Build           ║"
+echo "║  📱 Proxy VPN APK Builder - Cliente WireGuard Nativo      ║"
 echo "║     Este processo pode levar ~15-20 minutos                ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
@@ -74,9 +77,12 @@ apt install -y -qq \
   wget \
   git \
   unzip \
-  default-jdk-headless \
+  openjdk-17-jdk \
   build-essential \
   >/dev/null 2>&1
+
+export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+export PATH="$JAVA_HOME/bin:$PATH"
 
 log_success "Dependências instaladas"
 
@@ -134,9 +140,13 @@ fi
 export ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
 export PATH="$ANDROID_HOME/cmdline-tools/bin:$PATH"
 
-# Step 4: Clonar repositório
-log_info "Passo 4: Clonando/atualizando repositório..."
-if [ -d "$BUILD_DIR" ]; then
+# Step 4: Clonar/atualizar repositório
+log_info "Passo 4: Preparando código-fonte..."
+if [ -d "/opt/Proxy-vpn/mobile" ]; then
+  BUILD_DIR="/opt/Proxy-vpn"
+  cd "$BUILD_DIR"
+  log_success "Usando repositório local em /opt/Proxy-vpn"
+elif [ -d "$BUILD_DIR" ]; then
   log_info "  Atualizando repo existente..."
   cd "$BUILD_DIR"
   git pull -q origin main || git fetch -q origin main
@@ -172,7 +182,9 @@ log_success "Arquivos sincronizados"
 # Step 9: Build APK
 log_info "Passo 9: Compilando APK (pode levar ~10 minutos)..."
 log_warn "   Isso pode demorar, aguarde..."
-npx cap build android >/dev/null 2>&1
+cd "$BUILD_DIR/mobile/android"
+chmod +x gradlew
+./gradlew assembleDebug
 
 # Verificar se build foi bem-sucedido
 if [ -f "$APK_OUTPUT/app-debug.apk" ]; then
@@ -183,7 +195,7 @@ fi
 
 # Step 10: Copiar APK para local acessível
 log_info "Passo 10: Preparando APK para download..."
-FINAL_APK="/root/wireguard-vpn-manager.apk"
+FINAL_APK="/root/proxy-vpn.apk"
 cp "$APK_OUTPUT/app-debug.apk" "$FINAL_APK"
 chmod 644 "$FINAL_APK"
 log_success "APK copiado: $FINAL_APK"
@@ -205,7 +217,7 @@ HANDLER = http.server.SimpleHTTPRequestHandler
 class MyHandler(HANDLER):
     def do_GET(self):
         if self.path == '/wireguard.apk':
-            self.path = '/wireguard-vpn-manager.apk'
+            self.path = '/proxy-vpn.apk'
         return super().do_GET()
 
 if __name__ == '__main__':
@@ -257,8 +269,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "1. Baixe o APK usando um dos métodos acima"
 echo "2. Copie para seu Android (email, USB, etc)"
 echo "3. Abra o arquivo e instale"
-echo "4. Execute o app e preencha os dados da VPS"
-echo "5. Clique 'Conectar' e use WireGuard!"
+echo "4. Abra Configuração da VPS e preencha IP/chaves (uma vez)"
+echo "5. Toque em 'Conectar VPN' — conexão direta, sem app WireGuard externo"
 echo ""
 
 log_success "Build completo!"

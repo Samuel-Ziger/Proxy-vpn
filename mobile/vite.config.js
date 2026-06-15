@@ -7,7 +7,6 @@ export default defineConfig({
     outDir: '../dist',
     emptyOutDir: true,
     target: 'es2020',
-    minify: 'terser',
   },
   server: {
     port: 3000,

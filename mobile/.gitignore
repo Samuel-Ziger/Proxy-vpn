@@ -1,6 +1,5 @@
 node_modules/
 dist/
-android/
 .DS_Store
 *.log
 .env
@@ -10,7 +9,10 @@ android/
 *.swp
 *.swo
 *~
-.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
 *.apk
 *.aab
 build/
