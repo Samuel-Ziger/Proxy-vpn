@@ -15,6 +15,6 @@ export class WireGuardWeb extends WebPlugin implements WireGuardPlugin {
   }
 
   async getStatus(): Promise<WireGuardStatus> {
-    return { connected: false, tunnelName: 'ProxyVPN' };
+    return { connected: false, tunnelName: 'GhostTunnel' };
   }
 }

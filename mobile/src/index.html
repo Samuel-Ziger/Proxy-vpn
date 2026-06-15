@@ -3,42 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#667eea">
-  <title>Proxy VPN</title>
+  <meta name="theme-color" content="#0d0d12">
+  <meta name="color-scheme" content="dark">
+  <title>GhostTunnel</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Proxy VPN</h1>
-      <p>Conexão segura com um toque</p>
+  <div class="app">
+    <header class="header">
+      <div class="logo-wrap">
+        <svg class="logo-ghost" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="ghostGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#00e5c0"/>
+              <stop offset="100%" style="stop-color:#7c3aed"/>
+            </linearGradient>
+          </defs>
+          <path fill="url(#ghostGrad)" d="M32 6C20 6 12 16 12 28v22c0 2 3 3 5 1l3-3 4 4 4-4 4 4 4-4 3 3c2 2 5 1 5-1V28C48 16 44 6 32 6zm-8 22a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm16 0a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
+        </svg>
+        <div class="logo-text">
+          <h1>GhostTunnel</h1>
+          <p>Túnel invisível, conexão sua</p>
+        </div>
+      </div>
     </header>
 
-    <main>
-      <section class="status-card">
+    <main class="main">
+      <section class="hero-card">
         <div class="status-row">
           <span id="statusDot" class="status-dot disconnected"></span>
           <span id="statusText" class="status-label">Desconectado</span>
         </div>
-        <button id="toggleBtn" class="btn btn-success btn-large">
+
+        <button id="toggleBtn" class="btn-connect btn-success" type="button">
           Conectar VPN
         </button>
+
         <div id="statusMessage" class="status-message"></div>
+      </section>
+
+      <section class="security-card">
+        <h2 class="security-title">Proteção GhostTunnel</h2>
+        <ul class="security-list">
+          <li><span class="sec-icon">🔐</span> Túnel criptografado em redes públicas/corporativas</li>
+          <li><span class="sec-icon">🛡</span> DNS filtra malware, phishing e ads</li>
+          <li><span class="sec-icon">👁</span> Bloqueia rastreadores conhecidos (domínios)</li>
+          <li><span class="sec-icon">🌐</span> IP de saída = sua VPS</li>
+        </ul>
+        <p class="security-note">Cookies em sites exigem bloqueador no navegador — a VPN não os remove.</p>
+      </section>
+
+      <section id="connectedPanel" class="connected-panel hidden">
+        <div class="protected-badge">
+          <span class="shield-icon">🛡</span>
+          Protegido
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">IP público</span>
+            <span id="displayIp" class="info-value">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Servidor</span>
+            <span id="displayServer" class="info-value">—</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Sessão</span>
+            <span id="sessionTimer" class="info-value timer">00:00:00</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">DNS</span>
+            <span id="displayDns" class="info-value dns-active">AdGuard</span>
+          </div>
+        </div>
       </section>
 
       <section class="config-section">
         <button id="settingsToggle" class="btn btn-secondary settings-toggle" type="button">
+          <span class="settings-icon">⚙</span>
           Configuração da VPS
         </button>
 
-        <div id="settingsPanel" class="settings-panel" style="display: none;">
+        <div id="settingsPanel" class="settings-panel hidden">
           <form id="configForm">
             <div class="form-group">
               <label for="serverIp">IP da VPS (IPv4)</label>
               <input
                 type="text"
                 id="serverIp"
-                placeholder="ex: 162.243.54.185"
+                placeholder="ex: 203.0.113.10"
                 autocomplete="off"
               >
             </div>
@@ -59,6 +112,7 @@
                 id="privateKey"
                 placeholder="PrivateKey do wg-client.conf"
                 rows="3"
+                spellcheck="false"
               ></textarea>
             </div>
 
@@ -68,6 +122,7 @@
                 id="publicKeyServer"
                 placeholder="server_public.key"
                 rows="3"
+                spellcheck="false"
               ></textarea>
             </div>
 
@@ -79,8 +134,8 @@
       </section>
     </main>
 
-    <footer>
-      <p>Cliente WireGuard nativo • Suas chaves ficam só no dispositivo</p>
+    <footer class="footer">
+      <p>GhostTunnel • Chaves só no dispositivo</p>
     </footer>
   </div>
 

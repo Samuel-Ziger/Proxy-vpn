@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
-# Corrige "sem internet" no celular com WireGuard + UFW
-# UFW bloqueia tráfego encaminhado (routed) por padrão — este script libera NAT/forward para wg0
+# GhostTunnel — corrige "sem internet" (NAT/UFW)
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=ghost-art.sh
+source "$SCRIPT_DIR/ghost-art.sh"
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "Execute como root: sudo bash fix-vpn-nat.sh"
   exit 1
 fi
+
+echo ""
+ghost_banner_nat
+echo ""
 
 OUT_IF=$(ip -o route get 8.8.8.8 | awk '{for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}' | head -n1)
 OUT_IF="${OUT_IF:-eth0}"
@@ -28,9 +35,11 @@ fi
 
 # 3) Regras NAT e forward no before.rules
 BEFORE_RULES="/etc/ufw/before.rules"
-MARKER="PROXY-VPN-WIREGUARD"
+MARKER="GHOST-TUNNEL-WIREGUARD"
 
-if ! grep -q "$MARKER" "$BEFORE_RULES"; then
+if grep -qE "GHOST-TUNNEL-WIREGUARD|PROXY-VPN-WIREGUARD" "$BEFORE_RULES"; then
+  echo "Regras UFW já existem — pulando"
+else
   TMP=$(mktemp)
   awk -v iface="$OUT_IF" -v marker="$MARKER" '
     /^# Don.t delete these required lines/ && !done {
@@ -59,8 +68,6 @@ if ! grep -q "$MARKER" "$BEFORE_RULES"; then
   cp "$BEFORE_RULES" "${BEFORE_RULES}.bak.$(date +%s)"
   mv "$TMP" "$BEFORE_RULES"
   echo "Regras UFW adicionadas em $BEFORE_RULES"
-else
-  echo "Regras UFW já existem — pulando"
 fi
 
 # 4) Garantir ip_forward ativo
@@ -72,7 +79,9 @@ ufw reload
 systemctl restart wg-quick@wg0
 
 echo ""
-echo "Correção aplicada."
+ghost_success_nat
+ghost_tunnel_flow
+echo ""
 echo "No celular: desconecte e reconecte a VPN."
 echo "Teste: https://ifconfig.me (deve mostrar o IP da VPS)"
 echo ""

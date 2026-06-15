@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Proxy VPN</string>
-    <string name="title_activity_main">Proxy VPN</string>
+    <string name="app_name">GhostTunnel</string>
+    <string name="title_activity_main">GhostTunnel</string>
     <string name="package_name">com.proxyvpn.wireguard</string>
     <string name="custom_url_scheme">com.proxyvpn.wireguard</string>
 </resources>

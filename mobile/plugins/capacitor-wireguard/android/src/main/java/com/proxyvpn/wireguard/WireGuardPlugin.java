@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 public class WireGuardPlugin extends Plugin {
     private static final String TAG = "WireGuardPlugin";
     private static final int VPN_REQUEST_CODE = 51820;
-    private static final String DEFAULT_TUNNEL_NAME = "ProxyVPN";
+    private static final String DEFAULT_TUNNEL_NAME = "GhostTunnel";
 
     private final java.util.concurrent.ExecutorService executor = Executors.newSingleThreadExecutor();
     private Backend backend;

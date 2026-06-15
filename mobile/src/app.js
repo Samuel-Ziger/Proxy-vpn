@@ -1,20 +1,29 @@
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import { WireGuard } from 'capacitor-wireguard';
 
-const TUNNEL_NAME = 'ProxyVPN';
+const TUNNEL_NAME = 'GhostTunnel';
 const STORAGE_KEY = 'wg-config';
+const SESSION_KEY = 'wg-session-start';
+
+// AdGuard DNS — bloqueia ads, trackers, malware e phishing
+const DNS_FILTER = '94.140.14.14, 94.140.15.15';
+const DNS_LABEL = 'AdGuard (ads + trackers + malware)';
 
 let isConnected = false;
 let isBusy = false;
+let sessionInterval = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await initNativeUi();
+
   document.getElementById('saveBtn').addEventListener('click', saveSettings);
   document.getElementById('toggleBtn').addEventListener('click', toggleConnection);
   document.getElementById('settingsToggle').addEventListener('click', toggleSettings);
 
   loadSettings();
-  refreshStatus();
+  await refreshStatus();
 
   App.addListener('appStateChange', ({ isActive }) => {
     if (isActive) refreshStatus();
@@ -25,10 +34,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+async function initNativeUi() {
+  if (!Capacitor.isNativePlatform()) return;
+
+  try {
+    await StatusBar.setBackgroundColor({ color: '#0d0d12' });
+    await StatusBar.setStyle({ style: Style.Dark });
+  } catch {
+    // StatusBar pode não estar disponível em todos os dispositivos
+  }
+}
+
 function toggleSettings() {
   const panel = document.getElementById('settingsPanel');
-  const isHidden = panel.style.display === 'none';
-  panel.style.display = isHidden ? 'block' : 'none';
+  panel.classList.toggle('hidden');
 }
 
 function saveSettings() {
@@ -59,8 +78,8 @@ async function connectVpn() {
   if (!validateFields(fields, true)) return;
 
   const config = buildWireGuardConfig(fields);
-  setBusy(true);
-  showStatus('Conectando...', 'success');
+  setBusy(true, 'Conectando...');
+  showStatus('Estabelecendo túnel...', 'success');
 
   try {
     const result = await WireGuard.connect({
@@ -69,12 +88,16 @@ async function connectVpn() {
     });
 
     isConnected = result.connected;
+    if (isConnected) {
+      startSession(fields);
+    }
     saveSettingsQuiet(fields);
-    updateUi();
-    showStatus('VPN conectada com sucesso!', 'success');
+    updateUi(fields);
+    showStatus('VPN conectada!', 'success');
   } catch (error) {
     isConnected = false;
-    updateUi();
+    stopSession();
+    updateUi(fields);
     showStatus(error?.message || 'Falha ao conectar.', 'error');
   } finally {
     setBusy(false);
@@ -82,13 +105,14 @@ async function connectVpn() {
 }
 
 async function disconnectVpn() {
-  setBusy(true);
-  showStatus('Desconectando...', 'success');
+  setBusy(true, 'Desconectando...');
+  showStatus('Encerrando túnel...', 'success');
 
   try {
     await WireGuard.disconnect();
     isConnected = false;
-    updateUi();
+    stopSession();
+    updateUi(getFormFields());
     showStatus('VPN desconectada.', 'success');
   } catch (error) {
     showStatus(error?.message || 'Falha ao desconectar.', 'error');
@@ -98,19 +122,81 @@ async function disconnectVpn() {
 }
 
 async function refreshStatus() {
+  const fields = getFormFields();
+
   if (!Capacitor.isNativePlatform()) {
-    updateUi();
+    updateUi(fields);
     return;
   }
 
   try {
     const status = await WireGuard.getStatus();
     isConnected = status.connected;
+    if (isConnected) {
+      resumeSession(fields);
+    } else {
+      stopSession();
+    }
   } catch {
     isConnected = false;
+    stopSession();
   }
 
-  updateUi();
+  updateUi(fields);
+}
+
+function startSession(fields) {
+  const now = Date.now();
+  localStorage.setItem(SESSION_KEY, String(now));
+  startSessionTimer(fields);
+}
+
+function resumeSession(fields) {
+  if (!localStorage.getItem(SESSION_KEY)) {
+    localStorage.setItem(SESSION_KEY, String(Date.now()));
+  }
+  startSessionTimer(fields);
+}
+
+function stopSession() {
+  localStorage.removeItem(SESSION_KEY);
+  if (sessionInterval) {
+    clearInterval(sessionInterval);
+    sessionInterval = null;
+  }
+}
+
+function startSessionTimer(fields) {
+  if (sessionInterval) clearInterval(sessionInterval);
+
+  const tick = () => {
+    const start = Number(localStorage.getItem(SESSION_KEY));
+    if (!start) return;
+    const elapsed = Math.max(0, Date.now() - start);
+    const el = document.getElementById('sessionTimer');
+    if (el) el.textContent = formatDuration(elapsed);
+    updateConnectedInfo(fields);
+  };
+
+  tick();
+  sessionInterval = setInterval(tick, 1000);
+}
+
+function formatDuration(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return [h, m, s].map((n) => String(n).padStart(2, '0')).join(':');
+}
+
+function updateConnectedInfo(fields) {
+  const ipEl = document.getElementById('displayIp');
+  const serverEl = document.getElementById('displayServer');
+  if (ipEl) ipEl.textContent = fields.serverIp || '—';
+  if (serverEl) serverEl.textContent = fields.serverIp
+    ? `${fields.serverIp}:${fields.serverPort || '51820'}`
+    : '—';
 }
 
 function getFormFields() {
@@ -146,7 +232,7 @@ function buildWireGuardConfig({ serverIp, serverPort, privateKey, publicKeyServe
   return `[Interface]
 PrivateKey = ${privateKey}
 Address = 10.0.0.2/32
-DNS = 1.1.1.1
+DNS = ${DNS_FILTER}
 
 [Peer]
 PublicKey = ${publicKeyServer}
@@ -174,28 +260,42 @@ function saveSettingsQuiet(fields) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(fields));
 }
 
-function updateUi() {
+function updateUi(fields = getFormFields()) {
   const toggleBtn = document.getElementById('toggleBtn');
   const statusDot = document.getElementById('statusDot');
   const statusText = document.getElementById('statusText');
+  const connectedPanel = document.getElementById('connectedPanel');
 
-  if (isConnected) {
+  toggleBtn.classList.remove('btn-success', 'btn-danger', 'connecting');
+
+  if (isBusy) {
+    toggleBtn.classList.add('connecting');
+    toggleBtn.textContent = isConnected ? 'Desconectando...' : 'Conectando...';
+    toggleBtn.disabled = true;
+  } else if (isConnected) {
+    toggleBtn.classList.add('btn-danger');
     toggleBtn.textContent = 'Desconectar VPN';
-    toggleBtn.className = 'btn btn-danger btn-large';
+    toggleBtn.disabled = false;
     statusDot.className = 'status-dot connected';
     statusText.textContent = 'Conectado à VPS';
+    connectedPanel.classList.remove('hidden');
+    updateConnectedInfo(fields);
   } else {
+    toggleBtn.classList.add('btn-success');
     toggleBtn.textContent = 'Conectar VPN';
-    toggleBtn.className = 'btn btn-success btn-large';
+    toggleBtn.disabled = false;
     statusDot.className = 'status-dot disconnected';
     statusText.textContent = 'Desconectado';
+    connectedPanel.classList.add('hidden');
   }
-
-  toggleBtn.disabled = isBusy;
 }
 
-function setBusy(busy) {
+function setBusy(busy, label) {
   isBusy = busy;
+  if (label && busy) {
+    const toggleBtn = document.getElementById('toggleBtn');
+    toggleBtn.textContent = label;
+  }
   updateUi();
 }
 

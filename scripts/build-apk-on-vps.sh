@@ -21,7 +21,10 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # Paths
-BUILD_DIR="/opt/Proxy-vpn"
+BUILD_DIR="/opt/GhostTunnel"
+if [ ! -d "$BUILD_DIR/mobile" ]; then
+  BUILD_DIR="/opt/Proxy-vpn"
+fi
 if [ ! -d "$BUILD_DIR/mobile" ]; then
   BUILD_DIR="/opt/wireguard-apk"
 fi
@@ -31,6 +34,10 @@ APK_OUTPUT="${BUILD_DIR}/mobile/android/app/build/outputs/apk/debug"
 ###############################################################################
 # Funções
 ###############################################################################
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=ghost-art.sh
+source "$SCRIPT_DIR/ghost-art.sh"
 
 log_info() {
   echo -e "${BLUE}ℹ️  $1${NC}"
@@ -61,10 +68,8 @@ check_root() {
 ###############################################################################
 
 echo ""
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  📱 Proxy VPN APK Builder - Cliente WireGuard Nativo      ║"
-echo "║     Este processo pode levar ~15-20 minutos                ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+ghost_banner_apk
+ghost_spinner_line "Compilando o fantasma no servidor..."
 echo ""
 
 check_root
@@ -142,7 +147,11 @@ export PATH="$ANDROID_HOME/cmdline-tools/bin:$PATH"
 
 # Step 4: Clonar/atualizar repositório
 log_info "Passo 4: Preparando código-fonte..."
-if [ -d "/opt/Proxy-vpn/mobile" ]; then
+if [ -d "/opt/GhostTunnel/mobile" ]; then
+  BUILD_DIR="/opt/GhostTunnel"
+  cd "$BUILD_DIR"
+  log_success "Usando repositório local em /opt/GhostTunnel"
+elif [ -d "/opt/Proxy-vpn/mobile" ]; then
   BUILD_DIR="/opt/Proxy-vpn"
   cd "$BUILD_DIR"
   log_success "Usando repositório local em /opt/Proxy-vpn"
@@ -195,7 +204,7 @@ fi
 
 # Step 10: Copiar APK para local acessível
 log_info "Passo 10: Preparando APK para download..."
-FINAL_APK="/root/proxy-vpn.apk"
+FINAL_APK="/root/ghost-tunnel.apk"
 cp "$APK_OUTPUT/app-debug.apk" "$FINAL_APK"
 chmod 644 "$FINAL_APK"
 log_success "APK copiado: $FINAL_APK"
@@ -216,15 +225,15 @@ HANDLER = http.server.SimpleHTTPRequestHandler
 
 class MyHandler(HANDLER):
     def do_GET(self):
-        if self.path == '/wireguard.apk':
-            self.path = '/proxy-vpn.apk'
+        if self.path in ('/ghost-tunnel.apk', '/wireguard.apk'):
+            self.path = '/ghost-tunnel.apk'
         return super().do_GET()
 
 if __name__ == '__main__':
     os.chdir('/root')
     with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
         print(f"📦 Servidor HTTP iniciado em http://0.0.0.0:{PORT}")
-        print(f"📥 Baixe o APK em: http://SEU_IP_VPS:8080/wireguard.apk")
+        print(f"📥 Baixe o APK em: http://SEU_IP_VPS:8080/ghost-tunnel.apk")
         print("Pressione Ctrl+C para parar")
         try:
             httpd.serve_forever()
@@ -240,9 +249,7 @@ VPS_IP=$(curl -4 -s https://ifconfig.me 2>/dev/null || echo "SEU_IP_AQUI")
 
 # Summary
 echo ""
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║          ✅ APK GERADO COM SUCESSO!                       ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+ghost_success_apk
 echo ""
 
 echo -e "${GREEN}📱 APK pronto:${NC}"
@@ -254,14 +261,14 @@ echo ""
 echo -e "${GREEN}📥 Formas de baixar:${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "1. Via SCP (do seu computador):"
-echo "   scp root@${VPS_IP}:/root/wireguard-vpn-manager.apk ."
+echo "   scp usuario@${VPS_IP}:/root/ghost-tunnel.apk ."
 echo ""
 echo "2. Via servidor HTTP simples:"
 echo "   python3 /tmp/apk-server.py &"
-echo "   Depois acesse: http://${VPS_IP}:8080/wireguard.apk"
+echo "   Depois acesse: http://${VPS_IP}:8080/ghost-tunnel.apk"
 echo ""
 echo "3. Via SSH + cat:"
-echo "   ssh root@${VPS_IP} 'cat /root/wireguard-vpn-manager.apk' > app.apk"
+echo "   ssh usuario@${VPS_IP} 'cat /root/ghost-tunnel.apk' > ghost-tunnel.apk"
 echo ""
 
 echo -e "${BLUE}📝 Próximos passos:${NC}"

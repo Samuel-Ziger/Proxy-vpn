@@ -1,38 +1,42 @@
 #!/usr/bin/env bash
-# Build Proxy VPN APK (cliente WireGuard nativo)
+# GhostTunnel — Build APK local
 
 set -euo pipefail
 
-echo "Proxy VPN - APK Builder"
-echo "======================="
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../scripts/ghost-art.sh
+source "$SCRIPT_DIR/../scripts/ghost-art.sh"
+
+echo ""
+ghost_banner_build_local
+ghost_spinner_line "Invocando Gradle..."
+echo ""
 
 command -v node >/dev/null 2>&1 || { echo "Node.js não encontrado."; exit 1; }
 
-echo "Node: $(node --version)"
-echo "npm:  $(npm --version)"
-
+cd "$SCRIPT_DIR"
 npm install
 npm run build
 npx cap sync android
 
 if [ -z "${ANDROID_HOME:-}" ]; then
-  echo ""
   echo "ANDROID_HOME não configurado."
-  echo "Instale Android Studio ou defina ANDROID_HOME."
   exit 1
 fi
 
-echo ""
-echo "Compilando APK..."
 cd android
 chmod +x gradlew
 ./gradlew assembleDebug
 
-APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
-if [ -f "$APK_PATH" ]; then
+APK="app/build/outputs/apk/debug/app-debug.apk"
+if [ -f "$APK" ]; then
+  mkdir -p "$SCRIPT_DIR/../releases"
+  cp "$APK" "$SCRIPT_DIR/../releases/ghost-tunnel.apk"
   echo ""
-  echo "APK gerado:"
-  echo "  $(pwd)/$APK_PATH"
+  ghost_success_apk
+  echo ""
+  echo "APK: $(pwd)/$APK"
+  echo "Cópia: $SCRIPT_DIR/../releases/ghost-tunnel.apk"
 else
   echo "Falha: APK não encontrado."
   exit 1

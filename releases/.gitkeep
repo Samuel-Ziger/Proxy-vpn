@@ -1,6 +1,5 @@
-# APK Releases
+# GhostTunnel — Releases
 
-Generated WireGuard VPN Manager APKs for Android.
+APKs gerados localmente ou via CI. Não versionar `.apk` no Git — use GitHub Releases.
 
-Download the latest APK from GitHub Releases:
-https://github.com/Samuel-Ziger/Proxy-vpn/releases
+Nome padrão do build: `ghost-tunnel.apk`

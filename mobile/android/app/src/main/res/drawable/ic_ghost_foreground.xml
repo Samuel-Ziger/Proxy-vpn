@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Ghost body -->
+    <path
+        android:fillColor="#00E5C0"
+        android:pathData="M54,24 C40,24 30,36 30,50 L30,72 C30,74 33,75 35,73 L39,69 L43,73 L47,69 L51,73 L55,69 L59,73 L63,69 L67,73 L71,69 L75,73 C77,75 80,74 80,72 L80,50 C80,36 68,24 54,24 Z"/>
+    <!-- Left eye -->
+    <path
+        android:fillColor="#0D0D12"
+        android:pathData="M42,48 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0"/>
+    <!-- Right eye -->
+    <path
+        android:fillColor="#0D0D12"
+        android:pathData="M66,48 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0"/>
+    <!-- Purple accent glow -->
+    <path
+        android:fillColor="#7C3AED"
+        android:fillAlpha="0.35"
+        android:pathData="M54,78 C48,78 44,76 40,74 L40,80 C44,82 49,84 54,84 C59,84 64,82 68,80 L68,74 C64,76 60,78 54,78 Z"/>
+</vector>

@@ -1,7 +1,7 @@
 {
-  "name": "wireguard-vpn-mobile",
+  "name": "ghost-tunnel-mobile",
   "version": "1.0.0",
-  "description": "WireGuard VPN client for Android",
+  "description": "GhostTunnel — Android VPN client",
   "main": "index.js",
   "type": "module",
   "scripts": {

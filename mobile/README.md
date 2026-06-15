@@ -1,26 +1,30 @@
-# Proxy VPN — Cliente Android (WireGuard nativo)
+# GhostTunnel — App Android
 
-App Android com **conexão VPN em um toque**. Não precisa do app WireGuard separado.
+Cliente VPN nativo para Android. Conecta à sua VPS com **um toque**, sem app WireGuard externo.
 
-## Como funciona
+## Uso
 
-1. Configure IP, porta e chaves da VPS (uma vez)
-2. Toque em **Conectar VPN**
-3. Na primeira vez, o Android pede permissão VPN — aceite
-4. O túnel sobe direto pelo app
+1. Instale o APK (`ghost-tunnel.apk`)
+2. **Configuração da VPS** → IP, porta `51820`, chaves
+3. **Salvar** → **Conectar VPN**
+4. Aceite a permissão VPN (primeira vez)
+
+Teste: https://ifconfig.me deve mostrar o IP da VPS.
 
 ## Build do APK
 
-### Na VPS Ubuntu (recomendado)
+### Na VPS
 
 ```bash
-cd /opt/Proxy-vpn/scripts
+cd /opt/GhostTunnel/scripts
 sudo bash build-apk-on-vps.sh
 ```
 
-APK gerado em `/root/proxy-vpn.apk`
+Saída: `/root/ghost-tunnel.apk`
 
-### No PC (Android Studio + JDK 17)
+### No PC
+
+Requisitos: Node 18+, JDK 17+, `ANDROID_HOME`
 
 ```bash
 cd mobile
@@ -28,46 +32,26 @@ npm install
 npm run build
 npx cap sync android
 cd android
-./gradlew assembleDebug   # Windows: gradlew.bat assembleDebug
+./gradlew assembleDebug    # Windows: gradlew.bat assembleDebug
 ```
 
-APK em `mobile/android/app/build/outputs/apk/debug/app-debug.apk`
+APK: `android/app/build/outputs/apk/debug/app-debug.apk`
 
-**Requisitos:** Node 18+, JDK 17, `ANDROID_HOME` configurado.
-
-## Instalar no celular
-
-```bash
-scp ziger@IP_VPS:/root/proxy-vpn.apk .
-```
-
-Copie para o Android, instale e abra **Proxy VPN**.
-
-## Dados da VPS
-
-Na VPS:
-
-```bash
-curl -4 ifconfig.me
-sudo cat /etc/wireguard/server_public.key
-sudo cat /root/wg-client.conf   # se ainda existir
-```
-
-No app → **Configuração da VPS** → preencha e **Salvar**.
+Ou use `./build.sh`.
 
 ## Arquitetura
 
 ```
 mobile/
 ├── plugins/capacitor-wireguard/   # Plugin nativo (GoBackend + VpnService)
-├── android/                       # Projeto Capacitor Android
-└── src/                           # UI (botão Conectar/Desconectar)
+├── android/                       # Projeto Capacitor
+└── src/                           # UI (Conectar / Desconectar)
 ```
 
-O plugin usa a biblioteca oficial `com.wireguard.android:tunnel`.
+Biblioteca: `com.wireguard.android:tunnel`
 
 ## Segurança
 
-- Chaves ficam só no `localStorage` do dispositivo
-- Nenhum dado é enviado para servidor externo
-- Primeira conexão exige permissão VPN do Android (padrão do sistema)
+- Chaves salvas apenas no `localStorage` do dispositivo
+- Nenhum dado enviado a servidores externos
+- Permissão VPN exigida pelo Android na primeira conexão

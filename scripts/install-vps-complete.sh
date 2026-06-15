@@ -24,12 +24,16 @@ NC='\033[0m' # No Color
 WG_PORT=51820
 CLIENT_IP="10.0.0.2/32"
 SERVER_NET="10.0.0.1/24"
-DNS_SERVER="1.1.1.1"
+DNS_SERVER="94.140.14.14, 94.140.15.15"
 NEW_USER="vpnuser"
 
 ###############################################################################
 # Funções
 ###############################################################################
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=ghost-art.sh
+source "$SCRIPT_DIR/ghost-art.sh"
 
 log_info() {
   echo -e "${BLUE}ℹ️  $1${NC}"
@@ -59,10 +63,8 @@ check_root() {
 ###############################################################################
 
 echo ""
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║     🔒 WireGuard VPS Complete Setup                       ║"
-echo "║     Instalação automática e segura de VPN                 ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+ghost_banner_vps
+ghost_tunnel_flow
 echo ""
 
 check_root
@@ -222,9 +224,7 @@ log_success "Atualizações automáticas habilitadas"
 
 # Summary
 echo ""
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║              ✅ SETUP COMPLETO COM SUCESSO!               ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+ghost_success_vps
 echo ""
 
 echo -e "${GREEN}Informações da VPS:${NC}"
@@ -251,10 +251,10 @@ echo ""
 
 echo -e "${YELLOW}Próximos passos:${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "1. Baixe o arquivo /root/wg-client.conf"
-echo "2. Instale o app WireGuard no seu celular"
-echo "3. Importe a config (escanear QR ou copiar arquivo)"
-echo "4. Ative a conexão!"
+echo "1. Baixe /root/wg-client.conf ou gere o APK (build-apk-on-vps.sh)"
+echo "2. Instale o GhostTunnel no celular"
+echo "3. Configure IP/chaves no app"
+echo "4. Toque em Conectar VPN!"
 echo ""
 
 echo -e "${BLUE}Monitorar conexão:${NC}"

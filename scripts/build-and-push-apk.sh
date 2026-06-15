@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 ###############################################################################
-# Build APK and Push to GitHub Releases
-# Gera APK + faz push automático para GitHub + cria release
+# GhostTunnel — Build APK + GitHub Release
 #
 # Uso:
 #   sudo bash build-and-push-apk.sh
@@ -24,6 +23,10 @@ NC='\033[0m'
 ###############################################################################
 # Funções
 ###############################################################################
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+# shellcheck source=ghost-art.sh
+source "$SCRIPT_DIR/ghost-art.sh"
 
 log_info() {
   echo -e "${BLUE}ℹ️  $1${NC}"
@@ -68,9 +71,7 @@ check_git() {
 ###############################################################################
 
 echo ""
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  📱 WireGuard APK Builder + GitHub Release Pusher         ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+ghost_banner_release
 echo ""
 
 check_root
@@ -88,7 +89,7 @@ else
   log_error "build-apk-on-vps.sh não encontrado em $SCRIPT_DIR nem em /root"
 fi
 
-APK_FILE="/root/wireguard-vpn-manager.apk"
+APK_FILE="/root/ghost-tunnel.apk"
 if [ ! -f "$APK_FILE" ]; then
   log_error "APK não foi gerado em $APK_FILE"
   exit 1
@@ -99,7 +100,7 @@ log_success "APK gerado: $APK_SIZE"
 
 # Step 2: Clonar/sincronizar repositório
 log_info "Passo 2: Sincronizando repositório GitHub..."
-REPO_DIR="/tmp/Proxy-vpn-release"
+REPO_DIR="/tmp/GhostTunnel-release"
 if [ -d "$REPO_DIR" ]; then
   cd "$REPO_DIR"
   git pull -q origin main 2>/dev/null || git fetch -q origin main
@@ -112,10 +113,9 @@ log_success "Repositório sincronizado"
 
 # Step 3: Copiar APK para repo
 log_info "Passo 3: Copiando APK para repositório..."
-cp "$APK_FILE" "$REPO_DIR/releases/"
 mkdir -p "$REPO_DIR/releases"
-cp "$APK_FILE" "$REPO_DIR/releases/wireguard-vpn-manager.apk"
-chmod 644 "$REPO_DIR/releases/wireguard-vpn-manager.apk"
+cp "$APK_FILE" "$REPO_DIR/releases/ghost-tunnel.apk"
+chmod 644 "$REPO_DIR/releases/ghost-tunnel.apk"
 
 log_success "APK copiado"
 
@@ -126,29 +126,23 @@ BUILD_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 BUILD_HASH=$(git -C "$REPO_DIR" rev-parse --short HEAD)
 
 RELEASE_NOTES="
-## 📱 WireGuard VPN Manager v${VERSION#v}
+## GhostTunnel ${VERSION#v}
 
-**Build Information:**
-- 📅 Data: $BUILD_DATE
-- 🔗 Commit: $BUILD_HASH
-- 📦 Size: $APK_SIZE
+**Build:**
+- Data: $BUILD_DATE
+- Commit: $BUILD_HASH
+- Tamanho: $APK_SIZE
 
 **Instalação:**
-1. Baixe o APK \`wireguard-vpn-manager.apk\`
-2. Copie para seu Android
-3. Instale normalmente
-4. Abra o app e preencha os dados da VPS
-5. Clique em \"Conectar\" para usar com WireGuard
+1. Baixe \`ghost-tunnel.apk\`
+2. Instale no Android
+3. Configure IP/chaves da VPS
+4. Toque em Conectar VPN
 
 **Recursos:**
-✅ Gerador de QR code
-✅ Deep linking com WireGuard
-✅ Armazenamento local (seguro)
-✅ Interface otimizada para mobile
-
-**Changelog:**
-- Auto-build gerado em $BUILD_DATE
-- Build ID: $BUILD_HASH
+- Cliente WireGuard nativo
+- Conexão com um toque
+- Chaves apenas no dispositivo
 "
 
 log_success "Versão: $VERSION"
@@ -156,9 +150,9 @@ log_success "Versão: $VERSION"
 # Step 5: Fazer commit do APK no repo
 log_info "Passo 5: Commitando APK..."
 cd "$REPO_DIR"
-git add "releases/wireguard-vpn-manager.apk" || true
-git config user.name "WireGuard APK Builder" || true
-git config user.email "builder@wireguard.local" || true
+git add "releases/ghost-tunnel.apk" || true
+git config user.name "GhostTunnel Builder" || true
+git config user.email "builder@ghosttunnel.local" || true
 
 if git diff --cached --quiet; then
   log_warn "Nenhuma mudança no APK (pode ser idêntico)"
@@ -185,9 +179,9 @@ fi
 
 # Criar nova release
 gh release create "$VERSION" \
-  "releases/wireguard-vpn-manager.apk" \
+  "releases/ghost-tunnel.apk" \
   --repo Samuel-Ziger/Proxy-vpn \
-  --title "WireGuard VPN Manager $VERSION" \
+  --title "GhostTunnel $VERSION" \
   --notes "$RELEASE_NOTES" \
   --latest \
   2>/dev/null || log_error "Falha ao criar release"
@@ -196,14 +190,12 @@ log_success "Release $VERSION criada no GitHub"
 
 # Step 8: Gerar link de download
 log_info "Passo 8: Gerando informações de download..."
-DOWNLOAD_URL="https://github.com/Samuel-Ziger/Proxy-vpn/releases/download/$VERSION/wireguard-vpn-manager.apk"
+DOWNLOAD_URL="https://github.com/Samuel-Ziger/Proxy-vpn/releases/download/$VERSION/ghost-tunnel.apk"
 QR_URL="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$(echo -n "$DOWNLOAD_URL" | sed 's/ /%20/g' | sed 's/&/%26/g' | sed 's/=/%3D/g')"
 
 # Summary
 echo ""
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║      ✅ APK GERADO E ENVIADO PARA GITHUB COM SUCESSO!     ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+ghost_success_apk
 echo ""
 
 echo -e "${GREEN}📱 Release criado:${NC}"

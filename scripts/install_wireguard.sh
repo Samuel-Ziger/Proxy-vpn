@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install and configure WireGuard on Debian/Ubuntu
-# Generates server and client keys, creates /etc/wireguard/wg0.conf
-# and writes a `client.conf` to /root/wg-client.conf plus a QR PNG.
+# GhostTunnel — WireGuard quick install
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=ghost-art.sh
+source "$SCRIPT_DIR/ghost-art.sh"
 
 # Usage: run as root (sudo) on the VPS
 
@@ -12,11 +14,16 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+echo ""
+ghost_banner_wireguard
+ghost_tunnel_flow
+echo ""
+
 # Config - adjust if needed
 WG_PORT=51820
 CLIENT_IP="10.0.0.2/32"
 SERVER_NET="10.0.0.1/24"
-DNS_SERVER="1.1.1.1"
+DNS_SERVER="94.140.14.14, 94.140.15.15"
 
 echo "Updating packages..."
 apt update && apt upgrade -y
@@ -104,11 +111,11 @@ EOF
 chmod 600 /root/wg-client.conf
 qrencode -o /root/wg-client.png -s 6 < /root/wg-client.conf || true
 
-echo "WireGuard installed and started."
+echo ""
+ghost_success_vps
+echo ""
 echo "Server public key: ${SERVER_PUBLIC}"
 echo "Client config: /root/wg-client.conf"
-echo "Client QR: /root/wg-client.png (if qrencode available)"
-
+echo "Client QR: /root/wg-client.png"
+echo ""
 echo "Important: keep the private keys safe. Back up /etc/wireguard/*.key if needed."
-
-echo "Done."

@@ -1,0 +1,26 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+*.apk
+*.aab
+
+# Android
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/local.properties
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+.env
+.env.local
+
+# Secrets — nunca commitar
+*.conf
+*.key
+wg-client.*

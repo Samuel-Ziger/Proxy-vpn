@@ -1,13 +1,17 @@
 {
   "appId": "com.proxyvpn.wireguard",
-  "appName": "Proxy VPN",
+  "appName": "GhostTunnel",
   "webDir": "dist",
   "android": {
     "allowMixedContent": false
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 0
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#0d0d12",
+      "androidSplashResourceName": "ghost_splash",
+      "showSpinner": false
     }
   },
   "server": {
