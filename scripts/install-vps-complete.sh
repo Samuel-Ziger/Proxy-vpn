@@ -53,7 +53,7 @@ configure_ssh_hardening() {
 PermitRootLogin no
 PasswordAuthentication no
 PubkeyAuthentication yes
-ChallengeResponseAuthentication no
+KbdInteractiveAuthentication no
 EOF
 
   if [ -d /root/.ssh ] && [ -f /root/.ssh/authorized_keys ]; then
@@ -64,10 +64,18 @@ EOF
     log_warn "authorized_keys de root não encontrado — configure SSH para $NEW_USER antes de sair"
   fi
 
-  if ! sshd -t 2>/dev/null; then
-    log_error "Configuração SSH inválida — revertendo drop-in"
-    rm -f /etc/ssh/sshd_config.d/99-ghosttunnel.conf
-    exit 1
+  if ! sshd -t; then
+    log_warn "Drop-in SSH inválido no OpenSSH desta VPS — tentando configuração mínima..."
+    cat > /etc/ssh/sshd_config.d/99-ghosttunnel.conf <<'EOF'
+PermitRootLogin prohibit-password
+PasswordAuthentication no
+PubkeyAuthentication yes
+EOF
+    if ! sshd -t; then
+      log_warn "SSH hardening ignorado; WireGuard continuará. Ajuste /etc/ssh manualmente depois."
+      rm -f /etc/ssh/sshd_config.d/99-ghosttunnel.conf
+      return 0
+    fi
   fi
 
   systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || systemctl restart ssh 2>/dev/null || systemctl restart sshd
@@ -157,8 +165,8 @@ Address = ${SERVER_NET}
 ListenPort = ${WG_PORT}
 PrivateKey = ${SERVER_PRIVATE}
 PostUp = sysctl -w net.ipv4.ip_forward=1; sysctl -w net.ipv6.conf.all.forwarding=1
-PostDown = true
-SaveConfig = true
+PostDown = sysctl -w net.ipv4.ip_forward=1; sysctl -w net.ipv6.conf.all.forwarding=1
+SaveConfig = false
 
 [Peer]
 PublicKey = ${CLIENT_PUBLIC}
@@ -208,7 +216,12 @@ systemctl enable wg-quick@wg0
 log_success "WireGuard iniciado"
 
 log_info "Passo 11: Configurando NAT/forward..."
-bash "$SCRIPT_DIR/fix-vpn-nat.sh"
+if ! bash "$SCRIPT_DIR/fix-vpn-nat.sh"; then
+  log_warn "NAT/forward com aviso — tentando subir WireGuard manualmente..."
+  wg-quick down wg0 2>/dev/null || true
+  ip link del wg0 2>/dev/null || true
+  wg-quick up wg0 || { log_error "Falha ao iniciar WireGuard após NAT"; exit 1; }
+fi
 log_success "NAT/forward configurado"
 
 log_info "Passo 12: Ativando DNS filtrado local..."

@@ -126,7 +126,18 @@ grep -q '^net.ipv6.conf.default.forwarding=1' /etc/sysctl.conf 2>/dev/null || ec
 
 # 5) Recarregar firewall e WireGuard
 ufw reload
-systemctl restart wg-quick@wg0
+
+if ip link show wg0 >/dev/null 2>&1; then
+  wg-quick down wg0 2>/dev/null || true
+fi
+
+if ! wg-quick up wg0; then
+  echo "Aviso: wg-quick up falhou — tentando limpar interface e subir novamente..." >&2
+  ip link del wg0 2>/dev/null || true
+  wg-quick up wg0
+fi
+
+systemctl enable wg-quick@wg0 >/dev/null 2>&1 || true
 
 echo ""
 ghost_success_nat
