@@ -5,7 +5,7 @@ Guia para preparar uma VPS (Debian/Ubuntu) como servidor WireGuard do **GhostTun
 ## Visão geral
 
 - Objetivo: VPN pessoal para acessar a internet com segurança pelo celular (app GhostTunnel).
-- Princípios: superfície mínima, SSH com chave, firewall restritivo, NAT correto, DNS filtrado, backups.
+- Princípios: superfície mínima, SSH com chave, firewall restritivo, NAT correto, DNS local filtrado, PresharedKey, backups.
 
 ## Requisitos
 
@@ -65,6 +65,7 @@ Desconecte e reconecte no app.
 sudo wg show                    # handshake e tráfego
 sudo systemctl status wg-quick@wg0
 sudo ufw status verbose
+sudo bash /opt/GhostTunnel/scripts/healthcheck-vps.sh
 ```
 
 ## Manutenção

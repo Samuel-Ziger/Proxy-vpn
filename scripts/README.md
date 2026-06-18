@@ -9,7 +9,9 @@ Automação para VPS e build do APK Android.
 | `install-vps-complete.sh` | WireGuard + UFW + Fail2ban + SSH + NAT (canônico) | VPS |
 | `install_wireguard.sh` | WireGuard mínimo (sem SSH hardening) | VPS |
 | `fix-vpn-nat.sh` | Corrige “sem internet” (NAT/forward no UFW) | VPS |
-| `enable-dns-filter.sh` | Atualiza DNS AdGuard no `wg-client.conf` | VPS |
+| `enable-dns-filter.sh` | Instala/ativa DNS local filtrado ou fallback publico | VPS |
+| `update-dns-blocklist.sh` | Atualiza listas de ads/trackers/malware do `dnsmasq` | VPS |
+| `healthcheck-vps.sh` | Diagnostico de WireGuard, UFW, DNS e forwarding | VPS |
 | `add-peer.sh` | Adiciona segundo dispositivo | VPS |
 | `rotate-keys.sh` | Rotaciona chaves do cliente principal | VPS |
 | `build-apk-on-vps.sh` | Gera `ghost-tunnel.apk` | VPS |
@@ -48,6 +50,16 @@ sudo bash rotate-keys.sh
 ```bash
 sudo bash fix-vpn-nat.sh
 ```
+
+## DNS filtrado local
+
+```bash
+sudo bash enable-dns-filter.sh
+sudo bash update-dns-blocklist.sh
+sudo bash healthcheck-vps.sh
+```
+
+Use `sudo bash enable-dns-filter.sh --public` apenas se quiser voltar para AdGuard DNS publico diretamente no cliente.
 
 ## Build do APK
 

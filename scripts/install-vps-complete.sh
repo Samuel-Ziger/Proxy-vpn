@@ -17,8 +17,9 @@ NC='\033[0m'
 
 WG_PORT=51820
 CLIENT_IP="10.0.0.2/32"
-SERVER_NET="10.0.0.1/24"
-DNS_SERVER="94.140.14.14, 94.140.15.15"
+CLIENT_IPV6="fd42:42:42::2/128"
+SERVER_NET="10.0.0.1/24, fd42:42:42::1/64"
+DNS_SERVER="10.0.0.1"
 CLIENT_ALLOWED_IPS="0.0.0.0/0, ::/0"
 NEW_USER="vpnuser"
 FORCE=false
@@ -131,12 +132,14 @@ chmod 700 /etc/wireguard
 umask 077
 wg genkey | tee /etc/wireguard/server_private.key | wg pubkey > /etc/wireguard/server_public.key
 wg genkey | tee /etc/wireguard/client_private.key | wg pubkey > /etc/wireguard/client_public.key
+wg genpsk > /etc/wireguard/client_preshared.key
 log_success "Chaves geradas"
 
 SERVER_PRIVATE=$(cat /etc/wireguard/server_private.key)
 SERVER_PUBLIC=$(cat /etc/wireguard/server_public.key)
 CLIENT_PRIVATE=$(cat /etc/wireguard/client_private.key)
 CLIENT_PUBLIC=$(cat /etc/wireguard/client_public.key)
+CLIENT_PRESHARED=$(cat /etc/wireguard/client_preshared.key)
 
 log_info "Passo 5: Detectando interface de rede..."
 OUT_IF=$(ip -o route get 8.8.8.8 | awk '{for(i=1;i<=NF;i++) if($i=="dev") print $(i+1)}' | head -n1)
@@ -153,13 +156,14 @@ cat > /etc/wireguard/wg0.conf <<EOF
 Address = ${SERVER_NET}
 ListenPort = ${WG_PORT}
 PrivateKey = ${SERVER_PRIVATE}
-PostUp = sysctl -w net.ipv4.ip_forward=1
-PostDown = sysctl -w net.ipv4.ip_forward=1
+PostUp = sysctl -w net.ipv4.ip_forward=1; sysctl -w net.ipv6.conf.all.forwarding=1
+PostDown = true
 SaveConfig = true
 
 [Peer]
 PublicKey = ${CLIENT_PUBLIC}
-AllowedIPs = ${CLIENT_IP}
+PresharedKey = ${CLIENT_PRESHARED}
+AllowedIPs = ${CLIENT_IP}, ${CLIENT_IPV6}
 EOF
 chmod 600 /etc/wireguard/wg0.conf
 log_success "wg0.conf criado"
@@ -167,6 +171,12 @@ log_success "wg0.conf criado"
 log_info "Passo 7: Habilitando IP forwarding..."
 if ! grep -q "^net.ipv4.ip_forward=1" /etc/sysctl.conf; then
   echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+fi
+if ! grep -q "^net.ipv6.conf.all.forwarding=1" /etc/sysctl.conf; then
+  echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.conf
+fi
+if ! grep -q "^net.ipv6.conf.default.forwarding=1" /etc/sysctl.conf; then
+  echo "net.ipv6.conf.default.forwarding=1" >> /etc/sysctl.conf
 fi
 sysctl -p >/dev/null 2>&1
 log_success "IP forwarding habilitado"
@@ -201,7 +211,11 @@ log_info "Passo 11: Configurando NAT/forward..."
 bash "$SCRIPT_DIR/fix-vpn-nat.sh"
 log_success "NAT/forward configurado"
 
-log_info "Passo 12: Detectando IP público..."
+log_info "Passo 12: Ativando DNS filtrado local..."
+bash "$SCRIPT_DIR/enable-dns-filter.sh" --local
+log_success "DNS filtrado local ativo"
+
+log_info "Passo 13: Detectando IP público..."
 IPV4=$(curl -4 -s --max-time 10 https://ifconfig.me 2>/dev/null || curl -4 -s --max-time 10 https://api.ipify.org 2>/dev/null || echo "")
 if [ -z "$IPV4" ]; then
   log_warn "IPv4 não detectado automaticamente"
@@ -210,15 +224,16 @@ else
   log_success "IPv4 detectado"
 fi
 
-log_info "Passo 13: Gerando wg-client.conf..."
+log_info "Passo 14: Gerando wg-client.conf..."
 cat > /root/wg-client.conf <<EOF
 [Interface]
 PrivateKey = ${CLIENT_PRIVATE}
-Address = ${CLIENT_IP}
+Address = ${CLIENT_IP}, ${CLIENT_IPV6}
 DNS = ${DNS_SERVER}
 
 [Peer]
 PublicKey = ${SERVER_PUBLIC}
+PresharedKey = ${CLIENT_PRESHARED}
 Endpoint = ${IPV4}:${WG_PORT}
 AllowedIPs = ${CLIENT_ALLOWED_IPS}
 PersistentKeepalive = 25
@@ -226,7 +241,7 @@ EOF
 chmod 600 /root/wg-client.conf
 log_success "Cliente: /root/wg-client.conf"
 
-log_info "Passo 14: Gerando QR code..."
+log_info "Passo 15: Gerando QR code..."
 qrencode -o /root/wg-client.png -s 10 < /root/wg-client.conf 2>/dev/null || true
 log_success "QR: /root/wg-client.png"
 

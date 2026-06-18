@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0d0d12">
   <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://ifconfig.me https://api.ipify.org; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>GhostTunnel</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -88,7 +89,7 @@
           </div>
           <div class="info-item">
             <span class="info-label">DNS</span>
-            <span id="displayDns" class="info-value dns-active">AdGuard</span>
+            <span id="displayDns" class="info-value dns-active">10.0.0.1</span>
           </div>
         </div>
       </section>
@@ -164,7 +165,34 @@
               ></textarea>
             </div>
 
-            <input type="hidden" id="clientAddress" value="10.0.0.2/32">
+            <div class="form-group">
+              <label for="presharedKey">PresharedKey (opcional)</label>
+              <div class="key-row">
+                <textarea
+                  id="presharedKey"
+                  class="key-input masked"
+                  placeholder="PresharedKey do wg-client.conf"
+                  rows="3"
+                  spellcheck="false"
+                ></textarea>
+                <button type="button" id="togglePresharedKey" class="btn btn-secondary btn-small" aria-pressed="false">
+                  Mostrar
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="dnsServers">DNS do tunel</label>
+              <input
+                type="text"
+                id="dnsServers"
+                placeholder="10.0.0.1"
+                value="10.0.0.1"
+                autocomplete="off"
+              >
+            </div>
+
+            <input type="hidden" id="clientAddress" value="10.0.0.2/32, fd42:42:42::2/128">
 
             <button type="button" id="saveBtn" class="btn btn-primary">
               Salvar configuração

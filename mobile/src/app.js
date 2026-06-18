@@ -38,6 +38,7 @@ function bindEvents() {
   document.getElementById('confFile').addEventListener('change', importConfFile);
   document.getElementById('vpnSettingsBtn').addEventListener('click', openVpnSettings);
   document.getElementById('togglePrivateKey').addEventListener('click', togglePrivateKeyVisibility);
+  document.getElementById('togglePresharedKey').addEventListener('click', togglePresharedKeyVisibility);
   document.getElementById('wizardDismiss').addEventListener('click', dismissWizard);
 }
 
@@ -90,8 +91,16 @@ function toggleSettings() {
 }
 
 function togglePrivateKeyVisibility() {
-  const input = document.getElementById('privateKey');
-  const btn = document.getElementById('togglePrivateKey');
+  toggleSecretVisibility('privateKey', 'togglePrivateKey');
+}
+
+function togglePresharedKeyVisibility() {
+  toggleSecretVisibility('presharedKey', 'togglePresharedKey');
+}
+
+function toggleSecretVisibility(inputId, buttonId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(buttonId);
   const masked = !input.classList.contains('masked');
   input.classList.toggle('masked', masked);
   btn.textContent = masked ? 'Mostrar' : 'Ocultar';
@@ -164,7 +173,9 @@ function applyFieldsToForm(config) {
   if (config.serverPort) document.getElementById('serverPort').value = config.serverPort;
   if (config.privateKey) document.getElementById('privateKey').value = config.privateKey;
   if (config.publicKeyServer) document.getElementById('publicKeyServer').value = config.publicKeyServer;
+  if (config.presharedKey) document.getElementById('presharedKey').value = config.presharedKey;
   if (config.clientAddress) document.getElementById('clientAddress').value = config.clientAddress;
+  if (config.dnsServers) document.getElementById('dnsServers').value = config.dnsServers;
 }
 
 async function toggleConnection() {
@@ -321,6 +332,7 @@ function formatDuration(ms) {
 function updateConnectedInfo(fields) {
   const ipEl = document.getElementById('displayIp');
   const serverEl = document.getElementById('displayServer');
+  const dnsEl = document.getElementById('displayDns');
 
   if (ipEl) {
     ipEl.textContent = cachedPublicIp || 'Verificando...';
@@ -329,7 +341,11 @@ function updateConnectedInfo(fields) {
   if (serverEl) {
     serverEl.textContent = fields.serverIp
       ? `${fields.serverIp}:${fields.serverPort || '51820'}`
-      : '—';
+      : '-';
+  }
+
+  if (dnsEl) {
+    dnsEl.textContent = fields.dnsServers || '10.0.0.1';
   }
 }
 
@@ -339,7 +355,9 @@ function getFormFields() {
     serverPort: document.getElementById('serverPort').value.trim(),
     privateKey: document.getElementById('privateKey').value.trim(),
     publicKeyServer: document.getElementById('publicKeyServer').value.trim(),
-    clientAddress: document.getElementById('clientAddress')?.value.trim() || '10.0.0.2/32',
+    presharedKey: document.getElementById('presharedKey')?.value.trim() || '',
+    clientAddress: document.getElementById('clientAddress')?.value.trim() || '10.0.0.2/32, fd42:42:42::2/128',
+    dnsServers: document.getElementById('dnsServers')?.value.trim() || '10.0.0.1',
   };
 }
 

@@ -23,4 +23,8 @@ mobile/android/local.properties
 # Secrets — nunca commitar
 *.conf
 *.key
+*.jks
+*.keystore
+*.p12
+*.pem
 wg-client.*

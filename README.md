@@ -19,7 +19,7 @@ Celular (GhostTunnel)
         │  UDP 51820 (criptografado)
         ▼
    VPS Ubuntu/Debian
-        │  NAT + DNS AdGuard
+        │  NAT + DNS local filtrado
         ▼
       Internet
 ```
@@ -28,10 +28,18 @@ Celular (GhostTunnel)
 
 ## Funcionalidades
 
+### Endurecimento atual
+- **PresharedKey WireGuard** em novos perfis e rotacao de chaves
+- **DNS filtrado local na VPS** (`10.0.0.1`) com `dnsmasq` + listas de ads/trackers/malware
+- **IPv4 + IPv6 ULA no tunel** (`10.0.0.0/24` e `fd42:42:42::/64`)
+- **App Android endurecido**: sem cleartext HTTP, screenshots bloqueados e release signing via env vars
+- **Toolchain atualizado**: Capacitor 8, SDK 36, Java 21, Gradle 8.14.3, AGP 8.13
+- **CI com audit/test/build** e artefatos com SHA256
+
 ### Servidor
 - Setup automatizado (WireGuard, UFW, Fail2ban, SSH)
 - `fix-vpn-nat.sh` corrige “sem internet” após conectar
-- `enable-dns-filter.sh` ativa DNS AdGuard no cliente WireGuard
+- `enable-dns-filter.sh` ativa DNS local filtrado e listas de bloqueio
 
 ### App Android
 - Conexão VPN em **um toque** (Conectar / Desconectar)
@@ -45,7 +53,7 @@ Celular (GhostTunnel)
 
 ### Proteção em rede
 - Tráfego **criptografado** até a VPS (Wi‑Fi público/corporativo)
-- **DNS AdGuard** — bloqueia ads, trackers, malware e phishing (domínios conhecidos)
+- **DNS local filtrado** — bloqueia ads, trackers, malware e phishing (domínios conhecidos)
 - **IP de saída** = IP da sua VPS (`AllowedIPs = 0.0.0.0/0`)
 
 Limitação: **cookies** não são bloqueados pela VPN — use navegador com proteção extra.
@@ -68,6 +76,18 @@ Ativar DNS filtrado no perfil do cliente:
 
 ```bash
 sudo bash enable-dns-filter.sh
+```
+
+Atualizar listas de bloqueio DNS:
+
+```bash
+sudo bash update-dns-blocklist.sh
+```
+
+Verificar saude da VPS:
+
+```bash
+sudo bash healthcheck-vps.sh
 ```
 
 Dados para configurar o app:
@@ -96,17 +116,14 @@ sudo bash build-apk-on-vps.sh
 scp usuario@IP_VPS:/root/ghost-tunnel.apk .
 ```
 
-**Build no Windows** (Node 18+, Android Studio / SDK):
+**Build no Windows** (Node 22+, Android Studio Otter+ / SDK 36):
 
 ```powershell
 $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
 $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
 cd mobile
 npm install
-npm run build
-npx cap sync android
-cd android
-.\gradlew.bat assembleDebug
+npm run build:apk
 ```
 
 Copie o APK para `releases/`:
@@ -116,6 +133,13 @@ Copy-Item mobile\android\app\build\outputs\apk\debug\app-debug.apk releases\ghos
 ```
 
 **Linux/macOS:** `cd mobile && ./build.sh` — copia automaticamente para `releases/ghost-tunnel.apk`.
+
+**Release assinado**: defina `GHOSTTUNNEL_KEYSTORE_PATH`, `GHOSTTUNNEL_KEYSTORE_PASSWORD`, `GHOSTTUNNEL_KEY_ALIAS` e `GHOSTTUNNEL_KEY_PASSWORD`, depois rode:
+
+```bash
+cd mobile
+GRADLE_TASK=assembleRelease ./build.sh
+```
 
 Mais detalhes: [mobile/README.md](mobile/README.md)
 
@@ -181,7 +205,7 @@ Documentação:
 
 ## Stack
 
-WireGuard · Capacitor 6 · `com.wireguard.android:tunnel` · AdGuard DNS · UFW · Fail2ban
+WireGuard · Capacitor 8 · `com.wireguard.android:tunnel` · dnsmasq blocklist · UFW · Fail2ban
 
 ---
 

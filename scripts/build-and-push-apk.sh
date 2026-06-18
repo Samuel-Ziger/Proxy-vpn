@@ -38,6 +38,16 @@ ghost_banner_release
 echo ""
 
 log_info "Passo 1: Gerando APK..."
+if [ -n "${GHOSTTUNNEL_KEYSTORE_PATH:-}" ] &&
+   [ -n "${GHOSTTUNNEL_KEYSTORE_PASSWORD:-}" ] &&
+   [ -n "${GHOSTTUNNEL_KEY_ALIAS:-}" ] &&
+   [ -n "${GHOSTTUNNEL_KEY_PASSWORD:-}" ]; then
+  export GRADLE_TASK="assembleRelease"
+  log_success "Keystore detectada; gerando APK release assinado"
+else
+  export GRADLE_TASK="assembleDebug"
+  log_warn "Keystore nao configurada; gerando APK debug"
+fi
 bash "$SCRIPT_DIR/build-apk-on-vps.sh"
 
 APK_FILE="/root/ghost-tunnel.apk"
@@ -54,7 +64,7 @@ if [ ! -d "$REPO_DIR/.git" ]; then
 fi
 
 BUILD_HASH=$(git -C "$REPO_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")
-APP_VERSION=$(node -p "require('$REPO_DIR/mobile/package.json').version" 2>/dev/null || echo "1.1.0")
+APP_VERSION=$(node -p "require('$REPO_DIR/mobile/package.json').version" 2>/dev/null || echo "1.2.0")
 VERSION="v${APP_VERSION}"
 BUILD_DATE=$(date '+%d/%m/%Y %H:%M:%S')
 
@@ -74,7 +84,8 @@ RELEASE_NOTES="## GhostTunnel ${VERSION}
 
 **Recursos**
 - Cliente WireGuard nativo
-- DNS AdGuard
+- DNS local filtrado
+- PresharedKey WireGuard
 - Storage criptografado de chaves
 "
 

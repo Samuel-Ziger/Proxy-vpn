@@ -2,7 +2,7 @@ ext {
     androidxAppCompatVersion = project.hasProperty('androidxAppCompatVersion') ? rootProject.ext.androidxAppCompatVersion : '1.6.1'
     junitVersion = project.hasProperty('junitVersion') ? rootProject.ext.junitVersion : '4.13.2'
     androidxJunitVersion = project.hasProperty('androidxJunitVersion') ? rootProject.ext.androidxJunitVersion : '1.1.5'
-    wireguardTunnelVersion = '1.0.20230706'
+    wireguardTunnelVersion = '1.0.20260102'
 }
 
 buildscript {
@@ -11,35 +11,35 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.2.1'
+        classpath 'com.android.tools.build:gradle:8.13.0'
     }
 }
 
 apply plugin: 'com.android.library'
 
 android {
-    namespace "com.proxyvpn.wireguard"
-    compileSdk project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 34
+    namespace = "com.proxyvpn.capacitor.wireguard"
+    compileSdk = project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 36
     defaultConfig {
-        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 24
-        targetSdkVersion project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 34
-        versionCode 1
-        versionName "1.0"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        minSdk = project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 24
+        targetSdk = project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 36
+        versionCode = 1
+        versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
         }
     }
     lintOptions {
-        abortOnError false
+        abortOnError = false
     }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-        coreLibraryDesugaringEnabled true
-    }
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_21
+            targetCompatibility JavaVersion.VERSION_21
+            coreLibraryDesugaringEnabled = true
+        }
 }
 
 repositories {
@@ -51,9 +51,11 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':capacitor-android')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
-    implementation "androidx.security:security-crypto:1.1.0-alpha06"
+    implementation "androidx.security:security-crypto:1.1.0"
     implementation "com.wireguard.android:tunnel:$wireguardTunnelVersion"
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    implementation "com.google.errorprone:error_prone_annotations:2.50.0"
+    implementation "com.google.code.findbugs:jsr305:3.0.2"
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
 }

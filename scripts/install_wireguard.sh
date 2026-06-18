@@ -22,8 +22,9 @@ echo ""
 # Config - adjust if needed
 WG_PORT=51820
 CLIENT_IP="10.0.0.2/32"
-SERVER_NET="10.0.0.1/24"
-DNS_SERVER="94.140.14.14, 94.140.15.15"
+CLIENT_IPV6="fd42:42:42::2/128"
+SERVER_NET="10.0.0.1/24, fd42:42:42::1/64"
+DNS_SERVER="10.0.0.1"
 
 echo "Updating packages..."
 apt update && apt upgrade -y
@@ -43,11 +44,13 @@ echo "Generating keys..."
 umask 077
 wg genkey | tee /etc/wireguard/server_private.key | wg pubkey > /etc/wireguard/server_public.key
 wg genkey | tee /etc/wireguard/client_private.key | wg pubkey > /etc/wireguard/client_public.key
+wg genpsk > /etc/wireguard/client_preshared.key
 
 SERVER_PRIVATE=$(cat /etc/wireguard/server_private.key)
 SERVER_PUBLIC=$(cat /etc/wireguard/server_public.key)
 CLIENT_PRIVATE=$(cat /etc/wireguard/client_private.key)
 CLIENT_PUBLIC=$(cat /etc/wireguard/client_public.key)
+CLIENT_PRESHARED=$(cat /etc/wireguard/client_preshared.key)
 
 echo "Writing /etc/wireguard/wg0.conf..."
 cat > /etc/wireguard/wg0.conf <<EOF
@@ -61,7 +64,8 @@ SaveConfig = true
 
 [Peer]
 PublicKey = ${CLIENT_PUBLIC}
-AllowedIPs = ${CLIENT_IP}
+PresharedKey = ${CLIENT_PRESHARED}
+AllowedIPs = ${CLIENT_IP}, ${CLIENT_IPV6}
 EOF
 
 chmod 600 /etc/wireguard/wg0.conf
@@ -70,6 +74,8 @@ echo "Enabling IP forwarding permanently..."
 if ! grep -q "^net.ipv4.ip_forward=1" /etc/sysctl.conf 2>/dev/null; then
   echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
 fi
+grep -q "^net.ipv6.conf.all.forwarding=1" /etc/sysctl.conf 2>/dev/null || echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.conf
+grep -q "^net.ipv6.conf.default.forwarding=1" /etc/sysctl.conf 2>/dev/null || echo "net.ipv6.conf.default.forwarding=1" >> /etc/sysctl.conf
 sysctl -p
 
 echo "Configuring UFW..."
@@ -89,6 +95,7 @@ systemctl enable wg-quick@wg0
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bash "$SCRIPT_DIR/fix-vpn-nat.sh"
+bash "$SCRIPT_DIR/enable-dns-filter.sh" --local
 
 # Determine public IPv4 endpoint
 IPV4=$(curl -4 -s https://ifconfig.me || true)
@@ -98,11 +105,12 @@ echo "Writing client config to /root/wg-client.conf and generating QR..."
 cat > /root/wg-client.conf <<EOF
 [Interface]
 PrivateKey = ${CLIENT_PRIVATE}
-Address = ${CLIENT_IP}
+Address = ${CLIENT_IP}, ${CLIENT_IPV6}
 DNS = ${DNS_SERVER}
 
 [Peer]
 PublicKey = ${SERVER_PUBLIC}
+PresharedKey = ${CLIENT_PRESHARED}
 Endpoint = ${PUBLIC_ENDPOINT}
 AllowedIPs = 0.0.0.0/0, ::/0
 PersistentKeepalive = 25

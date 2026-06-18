@@ -10,7 +10,7 @@ Cliente VPN nativo para Android. Conecta à sua VPS com **um toque**, sem app Wi
 4. Aceite a permissão VPN (primeira vez)
 5. Ative **VPN sempre ativa** pelo botão nas configurações Android
 
-Quando conectado: IP de saída real, servidor, tempo de sessão e DNS AdGuard.
+Quando conectado: IP de saída real, servidor, tempo de sessão e DNS local filtrado.
 
 ## Build do APK
 
@@ -23,7 +23,7 @@ sudo bash build-apk-on-vps.sh
 
 ### No PC
 
-Requisitos: Node 18+, JDK 17+ (Android Studio), `ANDROID_HOME`
+Requisitos: Node 22+, JDK 21+ (Android Studio Otter+), Android SDK 36, `ANDROID_HOME`
 
 ```bash
 cd mobile
@@ -60,6 +60,26 @@ mobile/
 
 - Chaves em **EncryptedSharedPreferences** (Android Keystore)
 - `allowBackup="false"` no manifest
-- DNS AdGuard quando conectado
+- `FLAG_SECURE` para bloquear screenshots/recents com chaves na tela
+- Cleartext HTTP bloqueado por network security config
+- PresharedKey WireGuard opcional importada do `wg-client.conf`
+- DNS local filtrado (`10.0.0.1`) quando conectado
 - Túnel IPv4 + IPv6 (`0.0.0.0/0, ::/0`)
 - Cookies não são bloqueados — ver [docs/SECURITY.md](../docs/SECURITY.md)
+
+## Release assinado
+
+Defina:
+
+```bash
+export GHOSTTUNNEL_KEYSTORE_PATH=/caminho/ghosttunnel-release.jks
+export GHOSTTUNNEL_KEYSTORE_PASSWORD=...
+export GHOSTTUNNEL_KEY_ALIAS=ghosttunnel
+export GHOSTTUNNEL_KEY_PASSWORD=...
+```
+
+Depois:
+
+```bash
+GRADLE_TASK=assembleRelease ./build.sh
+```

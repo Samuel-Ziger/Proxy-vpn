@@ -1,6 +1,6 @@
 {
   "name": "ghost-tunnel-mobile",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "GhostTunnel — Android VPN client",
   "type": "module",
   "scripts": {
@@ -8,23 +8,25 @@
     "build:plugin": "npm run build --prefix plugins/capacitor-wireguard",
     "build": "npm run build:plugin && vite build",
     "preview": "vite preview",
+    "test": "node --test src/*.test.js",
     "cap:sync": "cap sync",
     "cap:open": "cap open android",
-    "build:apk": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug"
+    "build:apk": "npm run build && npx cap sync android && node scripts/run-gradle.mjs assembleDebug",
+    "build:apk:release": "npm run build && npx cap sync android && node scripts/run-gradle.mjs assembleRelease"
   },
   "dependencies": {
-    "@capacitor/android": "^6.0.0",
-    "@capacitor/app": "^6.0.0",
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/haptics": "^6.0.0",
-    "@capacitor/status-bar": "^6.0.0",
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.2",
     "capacitor-wireguard": "file:./plugins/capacitor-wireguard"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0",
-    "vite": "^5.0.0"
+    "@capacitor/cli": "^8.4.0",
+    "vite": "^8.0.16"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   }
 }

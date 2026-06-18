@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/ghost-art.sh"
 
 WG_PORT=51820
-DNS_SERVER="94.140.14.14, 94.140.15.15"
+DNS_SERVER="10.0.0.1"
 CLIENT_ALLOWED_IPS="0.0.0.0/0, ::/0"
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -21,7 +21,7 @@ if ! wg show wg0 &>/dev/null; then
   exit 1
 fi
 
-PEER_NAME="${1:-device}"
+PEER_NAME="$(printf '%s' "${1:-device}" | sed 's/[^A-Za-z0-9_.-]/-/g')"
 SERVER_PUBLIC=$(cat /etc/wireguard/server_public.key)
 
 NEXT_HOST=2
@@ -34,14 +34,20 @@ while wg show wg0 allowed-ips | grep -q "10.0.0.${NEXT_HOST}/32"; do
 done
 
 CLIENT_IP="10.0.0.${NEXT_HOST}/32"
+CLIENT_IPV6="fd42:42:42::${NEXT_HOST}/128"
 PEER_DIR="/root/peers"
 mkdir -p "$PEER_DIR"
 umask 077
 
 CLIENT_PRIVATE=$(wg genkey)
 CLIENT_PUBLIC=$(echo "$CLIENT_PRIVATE" | wg pubkey)
+CLIENT_PRESHARED=$(wg genpsk)
+PSK_FILE=$(mktemp)
+trap 'rm -f "$PSK_FILE"' EXIT
+printf '%s\n' "$CLIENT_PRESHARED" > "$PSK_FILE"
 
-wg set wg0 peer "$CLIENT_PUBLIC" allowed-ips "$CLIENT_IP"
+wg set wg0 peer "$CLIENT_PUBLIC" preshared-key "$PSK_FILE" allowed-ips "$CLIENT_IP","$CLIENT_IPV6"
+wg-quick save wg0 >/dev/null 2>&1 || true
 
 IPV4=$(curl -4 -s --max-time 10 https://ifconfig.me 2>/dev/null || echo "SEU_IP_AQUI")
 
@@ -49,11 +55,12 @@ CLIENT_FILE="${PEER_DIR}/wg-client-${PEER_NAME}.conf"
 cat > "$CLIENT_FILE" <<EOF
 [Interface]
 PrivateKey = ${CLIENT_PRIVATE}
-Address = ${CLIENT_IP}
+Address = ${CLIENT_IP}, ${CLIENT_IPV6}
 DNS = ${DNS_SERVER}
 
 [Peer]
 PublicKey = ${SERVER_PUBLIC}
+PresharedKey = ${CLIENT_PRESHARED}
 Endpoint = ${IPV4}:${WG_PORT}
 AllowedIPs = ${CLIENT_ALLOWED_IPS}
 PersistentKeepalive = 25

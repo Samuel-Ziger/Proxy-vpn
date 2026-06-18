@@ -29,7 +29,7 @@ if [ ! -d "$BUILD_DIR/mobile" ]; then
   BUILD_DIR="/opt/wireguard-apk"
 fi
 REPO_URL="https://github.com/Samuel-Ziger/Proxy-vpn.git"
-APK_OUTPUT="${BUILD_DIR}/mobile/android/app/build/outputs/apk/debug"
+GRADLE_TASK="${GRADLE_TASK:-assembleDebug}"
 
 ###############################################################################
 # Funções
@@ -93,11 +93,12 @@ log_success "Dependências instaladas"
 
 # Step 2: Instalar Node.js (se não tem)
 log_info "Passo 2: Verificando Node.js..."
-if ! command -v node &> /dev/null; then
+NODE_MAJOR="$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0)"
+if ! command -v node &> /dev/null || [ "$NODE_MAJOR" -lt 22 ]; then
   log_warn "Node.js não encontrado. Instalando..."
   
   # Instalar Node.js via NodeSource
-  curl -fsSL https://deb.nodesource.com/setup_18.x | bash - >/dev/null 2>&1
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash - >/dev/null 2>&1
   apt install -y -qq nodejs >/dev/null 2>&1
   log_success "Node.js instalado: $(node --version)"
 else
@@ -132,8 +133,8 @@ if [ -z "${ANDROID_HOME:-}" ] || [ ! -d "$ANDROID_HOME" ]; then
   # Instalar componentes essenciais
   log_info "  Instalando componentes do SDK..."
   sdkmanager --install \
-    "platforms;android-35" \
-    "build-tools;35.0.0" \
+    "platforms;android-36" \
+    "build-tools;36.0.0" \
     >/dev/null 2>&1 || true
   
   log_success "Android SDK instalado em $ANDROID_HOME"
@@ -193,10 +194,21 @@ log_info "Passo 9: Compilando APK (pode levar ~10 minutos)..."
 log_warn "   Isso pode demorar, aguarde..."
 cd "$BUILD_DIR/mobile/android"
 chmod +x gradlew
-./gradlew assembleDebug
+./gradlew "$GRADLE_TASK"
 
 # Verificar se build foi bem-sucedido
-if [ -f "$APK_OUTPUT/app-debug.apk" ]; then
+if [ "$GRADLE_TASK" = "assembleRelease" ]; then
+  APK_OUTPUT="${BUILD_DIR}/mobile/android/app/build/outputs/apk/release"
+  APK_NAME="app-release.apk"
+  if [ ! -f "$APK_OUTPUT/$APK_NAME" ]; then
+    APK_NAME="app-release-unsigned.apk"
+  fi
+else
+  APK_OUTPUT="${BUILD_DIR}/mobile/android/app/build/outputs/apk/debug"
+  APK_NAME="app-debug.apk"
+fi
+
+if [ -f "$APK_OUTPUT/$APK_NAME" ]; then
   log_success "APK compilado com sucesso!"
 else
   log_error "Falha ao compilar APK. Verifique os logs acima."
@@ -205,7 +217,7 @@ fi
 # Step 10: Copiar APK para local acessível
 log_info "Passo 10: Preparando APK para download..."
 FINAL_APK="/root/ghost-tunnel.apk"
-cp "$APK_OUTPUT/app-debug.apk" "$FINAL_APK"
+cp "$APK_OUTPUT/$APK_NAME" "$FINAL_APK"
 chmod 644 "$FINAL_APK"
 log_success "APK copiado: $FINAL_APK"
 
